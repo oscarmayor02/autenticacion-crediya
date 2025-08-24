@@ -1,8 +1,8 @@
 package co.com.pragma.autenticacion.api;
 import co.com.pragma.autenticacion.api.dto.RolDTO;
 import co.com.pragma.autenticacion.model.rol.Rol;
-import co.com.pragma.autenticacion.usecase.rol.RolUseCase;
 import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
+import co.com.pragma.autenticacion.usecase.rol.RolUseCase;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -32,10 +31,10 @@ public class HandlerRole {
                     log.info("Petición para crear rol: {}", dto.getNombre());
                     var violations = validator.validate(dto);
                     if (!violations.isEmpty()) {
-                        List<String> errs = violations.stream()
+                        String errs = violations.stream()
                                 .map(ConstraintViolation::getMessage)
-                                .collect(Collectors.toList());
-                        throw new ValidationException(errs);
+                                .collect(Collectors.joining(", "));
+                        throw new ValidationException(errs); // usamos  ValidationException
                     }
                     return Rol.builder()
                             .uniqueId(dto.getUniqueId())
@@ -56,7 +55,7 @@ public class HandlerRole {
     }
 
     public Mono<ServerResponse> obtenerRolPorId(ServerRequest request) {
-        Long id = Long.valueOf(request.pathVariable("id"));
+        Long id = Long.valueOf(request.pathVariable("uniqueId"));
         log.info("Consultando rol con ID: {}", id);
         return rolUseCase.obtenerRolPorId(id)
                 .flatMap(rol -> ServerResponse.ok()
@@ -64,4 +63,45 @@ public class HandlerRole {
                         .bodyValue(rol))
                 .switchIfEmpty(ServerResponse.notFound().build());
     }
+
+    public Mono<ServerResponse> actualizarRol(ServerRequest request) {
+        return request.bodyToMono(RolDTO.class)
+                .map(this::validateDto)
+                .flatMap(rolUseCase::actualizarRol)
+                .flatMap(updatedRol -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(updatedRol))
+                .onErrorResume(this::handleError);
+    }
+
+    // Eliminar rol
+    public Mono<ServerResponse> eliminarRol(ServerRequest request) {
+        Long id = Long.valueOf(request.pathVariable("uniqueId"));
+        return rolUseCase.eliminarRol(id)
+                .then(ServerResponse.noContent().build())
+                .onErrorResume(this::handleError);
+    }
+
+    private Rol validateDto(RolDTO dto) {
+        var violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            String errs = violations.stream()
+                    .map(ConstraintViolation::getMessage)
+                    .collect(Collectors.joining(", "));
+            throw new ValidationException(errs);
+        }
+        return Rol.builder()
+                .uniqueId(dto.getUniqueId())
+                .nombre(dto.getNombre())
+                .descripcion(dto.getDescripcion())
+                .build();
+    }
+
+    private Mono<ServerResponse> handleError(Throwable e) {
+        log.error("Error: {}", e.getMessage());
+        return ServerResponse.badRequest()
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"error\":\"" + e.getMessage() + "\"}");
+    }
 }
+

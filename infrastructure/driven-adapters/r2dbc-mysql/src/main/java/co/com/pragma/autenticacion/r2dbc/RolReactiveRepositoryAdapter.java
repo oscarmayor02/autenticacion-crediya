@@ -15,23 +15,39 @@ public class RolReactiveRepositoryAdapter
         implements RolRepository {
 
     private final RolMapper rolMapper;
-    private final RolReactiveRepository repository;
+    private final RolReactiveRepository rolReactiveRepository;
 
-    protected RolReactiveRepositoryAdapter(RolReactiveRepository repository, RolMapper rolMapper) {
-        super(repository, null, rolMapper::toModel); // null porque no usamos ReactiveCommons
-        this.repository = repository;
+    protected RolReactiveRepositoryAdapter(RolReactiveRepository rolReactiveRepository, RolMapper rolMapper) {
+        super(rolReactiveRepository, null, rolMapper::toModel); // null porque no usamos ReactiveCommons
+        this.rolReactiveRepository = rolReactiveRepository;
         this.rolMapper = rolMapper;
     }
 
     @Override
     public Mono<Rol> findById(Long id) {
-        return repository.findById(id.intValue())
+        return rolReactiveRepository.findById(id.intValue())
                 .map(rolMapper::toModel);
     }
 
     @Override
     public Mono<Rol> save(Rol rol) {
-        return repository.save(rolMapper.toEntity(rol))
+        return rolReactiveRepository.save(rolMapper.toEntity(rol))
                 .map(rolMapper::toModel);
+    }
+
+    @Override
+    public Mono<Rol> update(Rol rol) {
+        return rolReactiveRepository.findById(rol.getUniqueId())
+                .flatMap(existing -> {
+                    RoleEntity entity = rolMapper.toEntity(rol);
+                    entity.setIdRol(existing.getIdRol()); // conservar ID real
+                    return rolReactiveRepository.save(entity);
+                })
+                .map(rolMapper::toModel);
+    }
+
+    @Override
+    public Mono<Void> delete(Long id) {
+        return rolReactiveRepository.deleteById(id.intValue());
     }
 }
