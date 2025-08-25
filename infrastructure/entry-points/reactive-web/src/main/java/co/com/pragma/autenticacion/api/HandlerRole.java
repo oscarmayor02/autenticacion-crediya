@@ -1,4 +1,5 @@
 package co.com.pragma.autenticacion.api;
+
 import co.com.pragma.autenticacion.api.dto.RolDTO;
 import co.com.pragma.autenticacion.model.rol.Rol;
 import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
@@ -25,6 +26,9 @@ public class HandlerRole {
     private final RolUseCase rolUseCase;
     private final Validator validator;
 
+    /**
+     * Crear un rol
+     */
     public Mono<ServerResponse> crearRol(ServerRequest request) {
         return request.bodyToMono(RolDTO.class)
                 .map(dto -> {
@@ -34,7 +38,7 @@ public class HandlerRole {
                         String errs = violations.stream()
                                 .map(ConstraintViolation::getMessage)
                                 .collect(Collectors.joining(", "));
-                        throw new ValidationException(errs); // usamos  ValidationException
+                        throw new ValidationException(errs);
                     }
                     return Rol.builder()
                             .uniqueId(dto.getUniqueId())
@@ -46,14 +50,16 @@ public class HandlerRole {
                 .flatMap(savedRol -> ServerResponse.status(201)
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedRol))
-                .onErrorResume(e -> {
-                    log.error("Error creando rol: {}", e.getMessage());
-                    return ServerResponse.badRequest()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue("{\"error\":\"" + e.getMessage() + "\"}");
-                });
+                .doOnSuccess(r -> log.info("Rol creado exitosamente: {}", r))
+                .doOnError(e -> log.error("Error creando rol: {}", e.getMessage()))
+                .onErrorResume(e -> ServerResponse.badRequest()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue("{\"error\":\"" + e.getMessage() + "\"}"));
     }
 
+    /**
+     * Obtener rol por ID
+     */
     public Mono<ServerResponse> obtenerRolPorId(ServerRequest request) {
         Long id = Long.valueOf(request.pathVariable("uniqueId"));
         log.info("Consultando rol con ID: {}", id);
@@ -64,6 +70,9 @@ public class HandlerRole {
                 .switchIfEmpty(ServerResponse.notFound().build());
     }
 
+    /**
+     * Actualizar rol
+     */
     public Mono<ServerResponse> actualizarRol(ServerRequest request) {
         return request.bodyToMono(RolDTO.class)
                 .map(this::validateDto)
@@ -71,17 +80,27 @@ public class HandlerRole {
                 .flatMap(updatedRol -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(updatedRol))
+                .doOnSuccess(r -> log.info("Rol actualizado: {}", r))
+                .doOnError(e -> log.error("Error actualizando rol: {}", e.getMessage()))
                 .onErrorResume(this::handleError);
     }
 
-    // Eliminar rol
+    /**
+     * Eliminar rol
+     */
     public Mono<ServerResponse> eliminarRol(ServerRequest request) {
         Long id = Long.valueOf(request.pathVariable("uniqueId"));
+        log.info("Eliminando rol con ID: {}", id);
         return rolUseCase.eliminarRol(id)
                 .then(ServerResponse.noContent().build())
+                .doOnSuccess(r -> log.info("Rol eliminado con ID: {}", id))
+                .doOnError(e -> log.error("Error eliminando rol: {}", e.getMessage()))
                 .onErrorResume(this::handleError);
     }
 
+    /**
+     * Validar DTO de rol
+     */
     private Rol validateDto(RolDTO dto) {
         var violations = validator.validate(dto);
         if (!violations.isEmpty()) {
@@ -97,6 +116,9 @@ public class HandlerRole {
                 .build();
     }
 
+    /**
+     * Manejo general de errores
+     */
     private Mono<ServerResponse> handleError(Throwable e) {
         log.error("Error: {}", e.getMessage());
         return ServerResponse.badRequest()
@@ -104,4 +126,3 @@ public class HandlerRole {
                 .bodyValue("{\"error\":\"" + e.getMessage() + "\"}");
     }
 }
-

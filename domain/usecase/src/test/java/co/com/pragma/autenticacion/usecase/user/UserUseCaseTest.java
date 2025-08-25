@@ -4,7 +4,6 @@ import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.model.user.gateways.UserRepository;
 import co.com.pragma.autenticacion.usecase.exceptions.DuplicateException;
 import co.com.pragma.autenticacion.usecase.exceptions.NotFoundException;
-import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,21 +16,22 @@ import java.math.BigDecimal;
 
 import static org.mockito.Mockito.*;
 
+// Test unitario para la lógica del UserUseCase con mocks del repositorio.
 class UserUseCaseTest {
 
     @Mock
-    private UserRepository userRepository; // 👉 Se "falsifica" el repo (no toca BD real)
+    private UserRepository userRepository; //  Mock: simulamos el acceso a la BD.
 
     @InjectMocks
-    private UserUseCase userUseCase; // 👉 Aquí probamos SOLO la lógica del UseCase
+    private UserUseCase userUseCase; //Clase que vamos a probar.
 
-    private User user;
+    private User user; //  Usuario de ejemplo para pruebas.
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        MockitoAnnotations.openMocks(this); // Inicializa los mocks.
 
-        // 👉 Usuario válido para pruebas
+        //  Instanciamos un usuario válido
         user = new User();
         user.setIdNumber(1L);
         user.setNombre("Oscar");
@@ -44,64 +44,70 @@ class UserUseCaseTest {
 
     @Test
     void saveUser_ok() {
-        // 👉 Configuramos mocks: correo y documento NO existen
+        //  Simulamos que NO existen duplicados
         when(userRepository.existsByEmail(user.getCorreoElectronico())).thenReturn(Mono.just(false));
         when(userRepository.existsByDocumento(user.getDocumentoIdentidad())).thenReturn(Mono.just(false));
+
+        //  Simulamos que el repo guarda el usuario
         when(userRepository.saveUser(user)).thenReturn(Mono.just(user));
 
         StepVerifier.create(userUseCase.saveUser(user))
-                .expectNext(user) // 👉 Esperamos que retorne el mismo usuario
+                .expectNext(user) //  Esperamos que retorne el usuario
                 .verifyComplete();
 
-        verify(userRepository).saveUser(user); // 👉 Verificamos que realmente llamó al repo
+        //  Validamos que efectivamente se llamó al saveUser del repo
+        verify(userRepository).saveUser(user);
     }
 
     @Test
     void saveUser_emailDuplicado() {
+        //  Simulamos que el correo ya existe
         when(userRepository.existsByEmail(user.getCorreoElectronico())).thenReturn(Mono.just(true));
         when(userRepository.existsByDocumento(user.getDocumentoIdentidad())).thenReturn(Mono.just(false));
 
         StepVerifier.create(userUseCase.saveUser(user))
-                .expectError(DuplicateException.class) // 👉 Debe fallar con excepción de duplicado
+                .expectError(DuplicateException.class) //  Debe lanzar excepción
                 .verify();
     }
 
     @Test
     void getUserById_existe() {
+        //  Simulamos que el usuario existe
         when(userRepository.getUserByIdNumber(1L)).thenReturn(Mono.just(user));
 
         StepVerifier.create(userUseCase.getUserByIdNumber(1L))
-                .expectNext(user)
+                .expectNext(user) //  Retorna usuario
                 .verifyComplete();
     }
 
     @Test
     void getUserById_noExiste() {
+        //  Simulamos que el usuario NO existe
         when(userRepository.getUserByIdNumber(1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(userUseCase.getUserByIdNumber(1L))
-                .expectError(NotFoundException.class)
+                .expectError(NotFoundException.class) //  Debe lanzar excepción
                 .verify();
     }
 
     @Test
     void editUser_ok() {
+        //  Simulamos que el usuario existe y luego lo actualiza
         when(userRepository.getUserByIdNumber(1L)).thenReturn(Mono.just(user));
         when(userRepository.editUser(user)).thenReturn(Mono.just(user));
 
         StepVerifier.create(userUseCase.editUser(user))
-                .expectNext(user)
+                .expectNext(user) //  Usuario actualizado
                 .verifyComplete();
     }
 
     @Test
     void deleteUser_ok() {
+        //  Simulamos que el usuario existe y se elimina
         when(userRepository.getUserByIdNumber(1L)).thenReturn(Mono.just(user));
         when(userRepository.deleteUser(1L)).thenReturn(Mono.empty());
 
         StepVerifier.create(userUseCase.deleteUser(1L))
-                .verifyComplete();
+                .verifyComplete(); //  Terminó bien
     }
-
-
 }

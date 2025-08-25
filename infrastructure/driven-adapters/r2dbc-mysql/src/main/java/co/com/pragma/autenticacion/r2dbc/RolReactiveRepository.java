@@ -5,7 +5,12 @@ import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 
+/**
+ * Repositorio reactivo para "roles".
+ * Extiende ReactiveCrudRepository para operaciones CRUD reactivas.
+ */
 @Repository
-public interface RolReactiveRepository extends ReactiveCrudRepository<RoleEntity, Integer>,
-        ReactiveQueryByExampleExecutor<RoleEntity> {
+public interface RolReactiveRepository extends
+        ReactiveCrudRepository<RoleEntity, Integer>, // CRUD base
+        ReactiveQueryByExampleExecutor<RoleEntity> { // Búsquedas dinámicas
 }

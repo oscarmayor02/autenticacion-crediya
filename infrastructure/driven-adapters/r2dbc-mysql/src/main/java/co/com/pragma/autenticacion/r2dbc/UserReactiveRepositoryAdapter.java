@@ -14,21 +14,24 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 
 /**
- * Implementación del repositorio reactivo para la entidad User.
- * Utiliza Spring Data R2DBC y aplica patrón Adapter para conectar dominio con infraestructura.
- * Todas las operaciones críticas se manejan dentro de transacciones reactivas.
+ * Adaptador que implementa UserRepository del dominio.
+ *
+ * Explicación:
+ * - Conecta la capa de dominio (User) con la base de datos (UserEntity).
+ * - Usa Spring Data R2DBC para consultas reactivas.
+ * - Incluye manejo transaccional con TransactionalOperator para garantizar atomicidad.
  */
 @Repository
 public class UserReactiveRepositoryAdapter
         extends ReactiveAdapterOperations<User, UserEntity, Long, UsuarioReactiveRepository>
         implements UserRepository {
 
-    private final UsuarioReactiveRepository usuarioReactiveRepository; // Repositorio reactivo que interactúa con la DB
-    private final UsuarioR2dbcMapper usuarioMapper; // Mapper para convertir entre User (dominio) y UserEntity (persistencia)
-    private final TransactionalOperator transactionalOperator; // Maneja transacciones reactivas
+    private final UsuarioReactiveRepository usuarioReactiveRepository;
+    private final UsuarioR2dbcMapper usuarioMapper;
+    private final TransactionalOperator transactionalOperator;
 
     /**
-     * Constructor: inyecta dependencias principales.
+     * Constructor: inyecta repositorio, mapper y operador transaccional.
      */
     public UserReactiveRepositoryAdapter(UsuarioReactiveRepository repository,
                                          UsuarioR2dbcMapper usuarioMapper,
@@ -40,23 +43,24 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Guarda un usuario en la base de datos.
-     * Se ejecuta dentro de una transacción reactiva.
+     * Guarda un usuario en la BD.
+     * - Convierte el modelo de dominio a entidad.
+     * - Lo guarda en la base.
+     * - Lo convierte de nuevo a modelo.
+     * - Todo dentro de una transacción reactiva.
      */
     @Override
     public Mono<User> saveUser(User user) {
         return Mono.defer(() -> {
-            // Convierte el modelo de dominio a entidad persistente
             UserEntity entity = usuarioMapper.toEntity(user);
-            // Guarda la entidad y la convierte nuevamente a modelo
             return usuarioReactiveRepository.save(entity)
                     .map(usuarioMapper::toModel);
-        }).as(transactionalOperator::transactional); // Aplica transacción reactiva
+        }).as(transactionalOperator::transactional);
     }
 
     /**
-     * Obtiene todos los usuarios de la base de datos.
-     * Esta operación es de solo lectura, no requiere transacción.
+     * Obtiene todos los usuarios.
+     * - Operación de solo lectura, no requiere transacción.
      */
     @Override
     public Flux<User> getAllUsers() {
@@ -65,8 +69,8 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Busca un usuario por su ID.
-     * Si no lo encuentra, lanza NotFoundException.
+     * Busca un usuario por ID.
+     * - Si no existe, lanza NotFoundException.
      */
     @Override
     public Mono<User> getUserByIdNumber(Long idNumber) {
@@ -77,20 +81,18 @@ public class UserReactiveRepositoryAdapter
 
     /**
      * Edita un usuario existente.
-     * - Primero valida que el usuario exista.
-     * - Luego actualiza los datos y guarda el nuevo estado.
-     * Todo dentro de una transacción reactiva.
+     * - Primero valida que el usuario exista en la BD.
+     * - Convierte el nuevo modelo a entidad pero conserva el ID original.
+     * - Guarda el nuevo estado y devuelve el modelo actualizado.
+     * - Todo dentro de una transacción.
      */
     @Override
     public Mono<User> editUser(User user) {
         return usuarioReactiveRepository.findById(user.getIdNumber())
                 .switchIfEmpty(Mono.error(new NotFoundException("No se pudo actualizar, usuario no encontrado")))
                 .flatMap(existing -> {
-                    // Convierte el modelo actualizado a entidad
                     UserEntity updated = usuarioMapper.toEntity(user);
-                    // Mantiene el ID original de la base
-                    updated.setIdUsuario(existing.getIdUsuario());
-                    // Guarda cambios y devuelve el modelo
+                    updated.setIdUsuario(existing.getIdUsuario()); // preserva el ID generado en la BD
                     return usuarioReactiveRepository.save(updated)
                             .map(usuarioMapper::toModel);
                 })
@@ -98,8 +100,8 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Elimina un usuario por su ID.
-     * Envuelto en transacción reactiva para garantizar atomicidad si se añaden más operaciones.
+     * Elimina un usuario por ID.
+     * - Se ejecuta dentro de una transacción por consistencia.
      */
     @Override
     public Mono<Void> deleteUser(Long idNumber) {
@@ -108,7 +110,7 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Verifica si existe un usuario con un correo electrónico específico.
+     * Verifica si ya existe un usuario con un correo electrónico dado.
      */
     @Override
     public Mono<Boolean> existsByEmail(String email) {
@@ -116,7 +118,7 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Verifica si existe un usuario con un documento de identidad específico.
+     * Verifica si ya existe un usuario con un documento de identidad dado.
      */
     @Override
     public Mono<Boolean> existsByDocumento(String documentoIdentidad) {
@@ -124,7 +126,7 @@ public class UserReactiveRepositoryAdapter
     }
 
     /**
-     * Verifica si existe un rol asociado a un ID dado.
+     * Verifica si un rol existe dado un ID.
      */
     @Override
     public Mono<Boolean> existsRoleById(BigDecimal idRol) {

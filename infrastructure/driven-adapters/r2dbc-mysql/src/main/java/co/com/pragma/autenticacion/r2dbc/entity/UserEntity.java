@@ -7,7 +7,10 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
-
+/**
+ * Entidad que representa la tabla "usuarios".
+ * Contiene toda la información básica del usuario.
+ */
 @Table(name = "usuarios")
 @AllArgsConstructor
 @NoArgsConstructor

@@ -1,7 +1,5 @@
 package co.com.pragma.autenticacion.api.config;
 
-
-
 import co.com.pragma.autenticacion.usecase.exceptions.DomainException;
 import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
