@@ -132,4 +132,10 @@ public class UserReactiveRepositoryAdapter
     public Mono<Boolean> existsRoleById(BigDecimal idRol) {
         return usuarioReactiveRepository.existsByRolId(idRol.longValue());
     }
+
+    @Override
+    public Mono<User> getByEmail(String email) {
+        return usuarioReactiveRepository.findByCorreoElectronico(email)
+                .map(usuarioMapper::toModel);
+    }
 }

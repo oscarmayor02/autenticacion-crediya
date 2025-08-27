@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS `${db}`.`usuarios` (
     `correo_electronico` VARCHAR(150) NULL,
     `salario_base` DECIMAL(15,2) NULL,
     `documento_identidad` VARCHAR(50) NULL,
+    `password` VARCHAR(70) NULL,
     `rol_id` BIGINT NULL,
     PRIMARY KEY (`id_usuario`),
     CONSTRAINT `fk_usuarios_roles` FOREIGN KEY (`rol_id`) REFERENCES `${db}`.`roles`(`rol_id`)

@@ -50,4 +50,9 @@ public class UsuarioRequestDTO {
     @Min(value = 1, message = "idRol debe ser mayor a 0")
     @Schema(description = "ID del rol asignado al usuario", example = "1")
     private Integer rolId;
+
+    // NUEVO: password plano para creación (no exponer en respuestas)
+    @NotBlank(message = "password es obligatorio")
+    @Size(min = 6, max = 100, message = "password debe tener entre 6 y 100 caracteres")
+    private String password;
 }

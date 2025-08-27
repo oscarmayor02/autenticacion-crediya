@@ -31,6 +31,8 @@ public class UserEntity {
 
     private String direccion;
 
+    private String password;
+
     private String telefono;
 
     @Column("correo_electronico")
@@ -43,5 +45,5 @@ public class UserEntity {
     private String documentoIdentidad;
 
     @Column("rol_id")
-    private Long rolId;
+    private BigDecimal rolId;
 }

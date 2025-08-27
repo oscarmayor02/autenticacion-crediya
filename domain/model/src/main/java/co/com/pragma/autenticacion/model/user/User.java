@@ -47,6 +47,6 @@ public class User {
     /** Rol asociado al usuario (FK a Rol). */
     private BigDecimal idRol;
 
-    private String passwordHash;        // en dominio guardamos el hash
+    private String password; // hashed
 
 }

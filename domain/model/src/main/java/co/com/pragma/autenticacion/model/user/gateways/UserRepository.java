@@ -69,4 +69,6 @@ public interface UserRepository {
      */
     Mono<Boolean> existsRoleById(BigDecimal idRol);
 
+    Mono<User> getByEmail(String email);
+
 }

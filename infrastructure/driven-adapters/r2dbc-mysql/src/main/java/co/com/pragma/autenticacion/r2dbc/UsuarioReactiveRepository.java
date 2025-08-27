@@ -1,5 +1,6 @@
 package co.com.pragma.autenticacion.r2dbc;
 
+import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.r2dbc.entity.UserEntity;
 import org.springframework.data.repository.query.ReactiveQueryByExampleExecutor;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -29,5 +30,6 @@ public interface UsuarioReactiveRepository extends ReactiveCrudRepository<UserEn
      * Verifica si existe un usuario asociado a un rol específico.
      */
     Mono<Boolean> existsByRolId(Long rolId);
+    Mono<UserEntity> findByCorreoElectronico(String correoElectronico);
 
 }

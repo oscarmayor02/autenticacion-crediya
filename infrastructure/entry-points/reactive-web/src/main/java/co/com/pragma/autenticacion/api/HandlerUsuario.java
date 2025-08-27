@@ -2,6 +2,7 @@ package co.com.pragma.autenticacion.api;
 
 import co.com.pragma.autenticacion.api.dto.UsuarioRequestDTO;
 import co.com.pragma.autenticacion.api.mapper.UsuarioApiMapper;
+import co.com.pragma.autenticacion.model.auth.gateways.PasswordEncoderPort;
 import co.com.pragma.autenticacion.usecase.exceptions.DuplicateException;
 import co.com.pragma.autenticacion.usecase.exceptions.NotFoundException;
 import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
@@ -29,6 +30,7 @@ public class HandlerUsuario {
     private final UserUseCase userUseCase; // Caso de uso de usuario
     private final UsuarioApiMapper usuarioMapper; // Mapper DTO ↔ Dominio
     private final Validator validator; // Bean de validación de jakarta
+    private final PasswordEncoderPort passwordEncoder; // NUEVO
 
     /**
      * Registrar usuario
@@ -64,6 +66,13 @@ public class HandlerUsuario {
                                 return Mono.just(dto);
                             });
                 })
+                // Hash de password ANTES de mapear a dominio
+                .flatMap(dto -> passwordEncoder.encode(dto.getPassword())
+                        .map(hash -> {
+                            dto.setPassword(hash); // reemplaza por hash
+                            return dto;
+                        })
+                )
                 .map(usuarioMapper::toDomain)
                 .flatMap(userUseCase::saveUser)
                 .flatMap(savedUser -> ServerResponse.ok()
