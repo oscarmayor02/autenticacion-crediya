@@ -15,7 +15,12 @@ import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-
+/**
+ * Caso de uso para Usuarios.
+ * - Contiene la lógica de negocio de CRUD.
+ * - Aplica validaciones.
+ * - Usa programación reactiva con Mono y Flux.
+ */
 @RequiredArgsConstructor
 public class UserUseCase {
 
@@ -23,12 +28,16 @@ public class UserUseCase {
 
     // ---------------------- CREATE ----------------------
     public Mono<User> saveUser(User user) {
-        validateUser(user);
+        validateUser(user); // primero validamos negocio
 
-        // Validar duplicados de manera paralela
+        /**
+         * Mono.zip: Ejecuta en paralelo 2 Monos y devuelve un Tuple (T1, T2).
+         * - Aquí verificamos si ya existe el correo y el documento de forma concurrente.
+         * - Si alguno ya existe → lanzamos DuplicateException.
+         */
         return Mono.zip(
-                userRepository.existsByEmail(user.getCorreoElectronico()),
-                userRepository.existsByDocumento(user.getDocumentoIdentidad())
+                userRepository.existsByEmail(user.getCorreoElectronico()),   // T1: ¿existe email?
+                userRepository.existsByDocumento(user.getDocumentoIdentidad()) // T2: ¿existe documento?
         ).flatMap(tuple -> {
             boolean emailExists = tuple.getT1();
             boolean docExists = tuple.getT2();
@@ -36,16 +45,19 @@ public class UserUseCase {
             if (emailExists) return Mono.error(new DuplicateException("El correo ya está registrado"));
             if (docExists) return Mono.error(new DuplicateException("El documento ya está registrado"));
 
+            // Si no hay duplicados → guardamos el usuario
             return userRepository.saveUser(user);
         });
     }
 
     // ---------------------- READ ----------------------
     public Flux<User> getAllUsers() {
+        // Flux = flujo de N usuarios
         return userRepository.getAllUsers();
     }
 
     public Mono<User> getUserByIdNumber(Long idNumber) {
+        // switchIfEmpty → si no encuentra nada, lanza NotFoundException
         return userRepository.getUserByIdNumber(idNumber)
                 .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + idNumber)));
     }
@@ -55,7 +67,7 @@ public class UserUseCase {
         return userRepository.getUserByIdNumber(user.getIdNumber())
                 .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + user.getIdNumber())))
                 .flatMap(existing -> {
-                    validateUser(user); // valida datos antes de actualizar
+                    validateUser(user); // validamos antes de editar
                     return userRepository.editUser(user);
                 });
     }
@@ -88,7 +100,8 @@ public class UserUseCase {
 
     private void validateEmail(String email) {
         if (isNullOrEmpty(email)) throw new ValidationException("El correo electrónico es obligatorio");
-        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) throw new ValidationException("Formato de correo inválido");
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$"))
+            throw new ValidationException("Formato de correo inválido");
     }
 
     private void validateSalario(BigDecimal salario) {
@@ -104,11 +117,9 @@ public class UserUseCase {
             int edad = Period.between(fecha, LocalDate.now()).getYears();
             if (edad < 18) throw new ValidationException("El usuario debe ser mayor de edad (18 años o más)");
         } catch (DateTimeParseException e) {
-            throw new ValidationException("Formato de fecha de nacimiento inválido. Debe ser yyyy-MM-dd");
+            throw new ValidationException("Formato de fecha inválido. Debe ser yyyy-MM-dd");
         }
     }
-
-
 
     private boolean isNullOrEmpty(String value) {
         return value == null || value.trim().isEmpty();

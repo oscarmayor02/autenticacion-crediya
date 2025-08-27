@@ -18,95 +18,87 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
+/**
+ * Router para exponer endpoints de ROLES.
+ */
 @Configuration
 public class RouterRestRole {
+
+    // Constantes
+    private static final String BASE_PATH = "/api/v1/roles";
+    private static final String PATH_ID = "/{uniqueId}";
+
     @Bean
     @RouterOperations({
-
+            // GET ALL
             @RouterOperation(
-                    path = "/api/v1/roles",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerRole.class,
-                    beanMethod = "getAllRoles", // ⚠️ verifica que sí exista en HandlerRole
+                    beanMethod = "getAllRoles",
                     operation = @Operation(
                             operationId = "getAllRoles",
                             summary = "Obtener todos los roles",
-                            responses = {
-                                    @ApiResponse(
-                                            responseCode = "200",
-                                            description = "Lista de roles",
-                                            content = @Content(schema = @Schema(implementation = RolDTO.class))
-                                    )
-                            }
+                            responses = {@ApiResponse(responseCode = "200", description = "Lista de roles",
+                                    content = @Content(schema = @Schema(implementation = RolDTO.class)))}
                     )
             ),
-
+            // GET BY ID
             @RouterOperation(
-                    path = "/api/v1/roles/{uniqueId}",
+                    path = BASE_PATH + PATH_ID,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerRole.class,
-                    beanMethod = "obtenerRolPorId", // 🔄 cambiado
+                    beanMethod = "obtenerRolPorId",
                     operation = @Operation(
                             operationId = "obtenerRolPorId",
                             summary = "Obtener un rol por ID",
                             responses = {
-                                    @ApiResponse(
-                                            responseCode = "200",
-                                            description = "Rol encontrado",
-                                            content = @Content(schema = @Schema(implementation = RolDTO.class))
-                                    ),
+                                    @ApiResponse(responseCode = "200", description = "Rol encontrado",
+                                            content = @Content(schema = @Schema(implementation = RolDTO.class))),
                                     @ApiResponse(responseCode = "404", description = "Rol no encontrado")
                             }
                     )
             ),
-
+            // POST
             @RouterOperation(
-                    path = "/api/v1/roles",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.POST,
                     beanClass = HandlerRole.class,
-                    beanMethod = "crearRol", // 🔄 cambiado
+                    beanMethod = "crearRol",
                     operation = @Operation(
                             operationId = "crearRol",
                             summary = "Registrar un nuevo rol",
-                            requestBody = @RequestBody(
-                                    required = true,
-                                    content = @Content(schema = @Schema(implementation = RolDTO.class))
-                            ),
-                            responses = {
-                                    @ApiResponse(responseCode = "201", description = "Rol creado")
-                            }
+                            requestBody = @RequestBody(required = true,
+                                    content = @Content(schema = @Schema(implementation = RolDTO.class))),
+                            responses = {@ApiResponse(responseCode = "201", description = "Rol creado")}
                     )
             ),
-
+            // PUT
             @RouterOperation(
-                    path = "/api/v1/roles",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.PUT,
                     beanClass = HandlerRole.class,
-                    beanMethod = "actualizarRol", // 🔄 cambiado
+                    beanMethod = "actualizarRol",
                     operation = @Operation(
                             operationId = "actualizarRol",
                             summary = "Editar un rol existente",
-                            requestBody = @RequestBody(
-                                    required = true,
-                                    content = @Content(schema = @Schema(implementation = RolDTO.class))
-                            ),
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "Rol actualizado"),
                                     @ApiResponse(responseCode = "404", description = "Rol no encontrado")
                             }
                     )
             ),
-
+            // DELETE
             @RouterOperation(
-                    path = "/api/v1/roles/{uniqueId}",
+                    path = BASE_PATH + PATH_ID,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.DELETE,
                     beanClass = HandlerRole.class,
-                    beanMethod = "eliminarRol", // 🔄 cambiado
+                    beanMethod = "eliminarRol",
                     operation = @Operation(
                             operationId = "eliminarRol",
                             summary = "Eliminar un rol por ID",
@@ -118,9 +110,9 @@ public class RouterRestRole {
             )
     })
     public RouterFunction<ServerResponse> rolRoutes(HandlerRole rolHandler) {
-        return route(POST("/api/v1/roles"), rolHandler::crearRol)
-                .andRoute(GET("/api/v1/roles/{uniqueId}"), rolHandler::obtenerRolPorId)
-                .andRoute(PUT("/api/v1/roles"), rolHandler::actualizarRol)
-                .andRoute(DELETE("/api/v1/roles/{uniqueId}"), rolHandler::eliminarRol);
+        return route(POST(BASE_PATH), rolHandler::crearRol)
+                .andRoute(GET(BASE_PATH + PATH_ID), rolHandler::obtenerRolPorId)
+                .andRoute(PUT(BASE_PATH), rolHandler::actualizarRol)
+                .andRoute(DELETE(BASE_PATH + PATH_ID), rolHandler::eliminarRol);
     }
 }

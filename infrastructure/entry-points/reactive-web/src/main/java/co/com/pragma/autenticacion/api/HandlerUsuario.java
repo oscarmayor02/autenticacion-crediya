@@ -20,20 +20,23 @@ import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
 
-
 @Component
 @RequiredArgsConstructor
 public class HandlerUsuario {
 
     private static final Logger log = LoggerFactory.getLogger(HandlerUsuario.class);
-    private final UserUseCase userUseCase;
-    private final UsuarioApiMapper usuarioMapper;
-    private final Validator validator; // Bean de jakarta validation
 
+    private final UserUseCase userUseCase; // Caso de uso de usuario
+    private final UsuarioApiMapper usuarioMapper; // Mapper DTO ↔ Dominio
+    private final Validator validator; // Bean de validación de jakarta
+
+    /**
+     * Registrar usuario
+     */
     public Mono<ServerResponse> registrarUsuario(ServerRequest request) {
         return request.bodyToMono(UsuarioRequestDTO.class)
                 .flatMap(dto -> {
-                    // 1️⃣ Validaciones básicas
+                    // Validaciones básicas del DTO
                     var violations = validator.validate(dto);
                     if (!violations.isEmpty()) {
                         String errs = violations.stream()
@@ -42,7 +45,7 @@ public class HandlerUsuario {
                         return Mono.error(new ValidationException(errs));
                     }
 
-                    // 2️⃣ Validación de email único
+                    // Validar si email ya existe
                     return userUseCase.existsByEmail(dto.getEmail())
                             .flatMap(emailExists -> {
                                 if (emailExists) {
@@ -52,7 +55,7 @@ public class HandlerUsuario {
                             });
                 })
                 .flatMap(dto -> {
-                    // 3️⃣ Validación de documento único
+                    // Validar si documento ya existe
                     return userUseCase.existsByDocumento(dto.getDocumentoIdentidad())
                             .flatMap(docExists -> {
                                 if (docExists) {
@@ -66,10 +69,10 @@ public class HandlerUsuario {
                 .flatMap(savedUser -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(usuarioMapper.toDTO(savedUser)))
+                .doOnSuccess(u -> log.info("Usuario creado exitosamente: {}", u))
+                .doOnError(e -> log.error("Error registrando usuario: {}", e.getMessage()))
                 .onErrorResume(e -> {
                     if (e instanceof ValidationException || e instanceof DuplicateException) {
-                        log.warn("Error registrando usuario", e);
-
                         return ServerResponse.badRequest()
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .bodyValue("{\"error\":\"" + e.getMessage() + "\"}");
@@ -80,29 +83,36 @@ public class HandlerUsuario {
                 });
     }
 
-
-    // Obtener todos los usuarios
+    /**
+     * Obtener todos los usuarios
+     */
     public Mono<ServerResponse> getAllUsers(ServerRequest request) {
         Flux<UsuarioRequestDTO> users = userUseCase.getAllUsers()
                 .map(usuarioMapper::toDTO);
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(users, UsuarioRequestDTO.class);
+                .body(users, UsuarioRequestDTO.class)
+                .doOnSuccess(u -> log.info("Se consultaron todos los usuarios"))
+                .doOnError(e -> log.error("Error consultando usuarios: {}", e.getMessage()));
     }
 
-    // Obtener usuario por ID
+    /**
+     * Obtener usuario por ID
+     */
     public Mono<ServerResponse> getUserById(ServerRequest request) {
         Long id = Long.parseLong(request.pathVariable("id"));
+        log.info("Consultando usuario con id: {}", id);
         return userUseCase.getUserByIdNumber(id)
                 .map(usuarioMapper::toDTO)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(user))
-                .onErrorResume(NotFoundException.class,
-                        e -> ServerResponse.notFound().build());
+                .onErrorResume(NotFoundException.class, e -> ServerResponse.notFound().build());
     }
 
-    // Editar usuario
+    /**
+     * Editar usuario
+     */
     public Mono<ServerResponse> editUser(ServerRequest request) {
         return request.bodyToMono(UsuarioRequestDTO.class)
                 .map(usuarioMapper::toDomain)
@@ -111,35 +121,45 @@ public class HandlerUsuario {
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(user))
-                .onErrorResume(NotFoundException.class,
-                        e -> ServerResponse.notFound().build());
+                .doOnSuccess(u -> log.info("Usuario editado: {}", u))
+                .doOnError(e -> log.error("Error editando usuario: {}", e.getMessage()))
+                .onErrorResume(NotFoundException.class, e -> ServerResponse.notFound().build());
     }
 
-    // Eliminar usuario
+    /**
+     * Eliminar usuario
+     */
     public Mono<ServerResponse> deleteUser(ServerRequest request) {
         Long id = Long.parseLong(request.pathVariable("id"));
+        log.info("Eliminando usuario con id: {}", id);
         return userUseCase.deleteUser(id)
                 .then(ServerResponse.noContent().build())
-                .onErrorResume(NotFoundException.class,
-                        e -> ServerResponse.notFound().build());
+                .doOnSuccess(u -> log.info("Usuario eliminado con id: {}", id))
+                .doOnError(e -> log.error("Error eliminando usuario: {}", e.getMessage()))
+                .onErrorResume(NotFoundException.class, e -> ServerResponse.notFound().build());
     }
 
-    // Verificar si email existe
+    /**
+     * Verificar si email existe
+     */
     public Mono<ServerResponse> existsByEmail(ServerRequest request) {
         String email = request.pathVariable("email");
         return userUseCase.existsByEmail(email)
                 .flatMap(exists -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue("{\"exists\": " + exists + "}"));
+                        .bodyValue("{\"exists\": " + exists + "}"))
+                .doOnError(e -> log.error("Error verificando email: {}", e.getMessage()));
     }
 
-    // Verificar si documento existe
+    /**
+     * Verificar si documento existe
+     */
     public Mono<ServerResponse> existsByDocumento(ServerRequest request) {
         String doc = request.pathVariable("documento");
         return userUseCase.existsByDocumento(doc)
                 .flatMap(exists -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue("{\"exists\": " + exists + "}"));
+                        .bodyValue("{\"exists\": " + exists + "}"))
+                .doOnError(e -> log.error("Error verificando documento: {}", e.getMessage()));
     }
 }
-

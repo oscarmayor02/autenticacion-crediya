@@ -19,16 +19,25 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
+/**
+ * Router funcional para exponer endpoints relacionados con USUARIOS.
+ * Usa programación funcional de Spring WebFlux.
+ */
 @Configuration
 @Tag(name = "Usuarios API", description = "Operaciones CRUD para Usuarios")
 public class RouterRestUsuario {
 
+    // ================== Constantes de Rutas ==================
+    private static final String BASE_PATH = "/api/v1/usuarios";
+    private static final String PATH_ID = "/{id}";
+    private static final String PATH_EXISTS_EMAIL = "/exists/email/{email}";
+    private static final String PATH_EXISTS_DOC = "/exists/documento/{documento}";
+
     @Bean
     @RouterOperations({
-
-            // ================== GET ALL ==================
+            // GET ALL
             @RouterOperation(
-                    path = "/api/v1/usuarios",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerUsuario.class,
@@ -37,20 +46,14 @@ public class RouterRestUsuario {
                             operationId = "getAllUsers",
                             summary = "Obtener todos los usuarios",
                             responses = {
-                                    @ApiResponse(
-                                            responseCode = "200",
-                                            description = "Lista de usuarios",
-                                            content = @Content(
-                                                    schema = @Schema(implementation = UsuarioRequestDTO.class)
-                                            )
-                                    )
+                                    @ApiResponse(responseCode = "200", description = "Lista de usuarios",
+                                            content = @Content(schema = @Schema(implementation = UsuarioRequestDTO.class)))
                             }
                     )
             ),
-
-            // ================== GET BY ID ==================
+            // GET BY ID
             @RouterOperation(
-                    path = "/api/v1/usuarios/{id}",
+                    path = BASE_PATH + PATH_ID,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerUsuario.class,
@@ -59,21 +62,15 @@ public class RouterRestUsuario {
                             operationId = "getUserById",
                             summary = "Obtener un usuario por ID",
                             responses = {
-                                    @ApiResponse(
-                                            responseCode = "200",
-                                            description = "Usuario encontrado",
-                                            content = @Content(
-                                                    schema = @Schema(implementation = UsuarioRequestDTO.class)
-                                            )
-                                    ),
+                                    @ApiResponse(responseCode = "200", description = "Usuario encontrado",
+                                            content = @Content(schema = @Schema(implementation = UsuarioRequestDTO.class))),
                                     @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
                             }
                     )
             ),
-
-            // ================== POST (REGISTRAR) ==================
+            // POST (crear usuario)
             @RouterOperation(
-                    path = "/api/v1/usuarios",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.POST,
                     beanClass = HandlerUsuario.class,
@@ -81,25 +78,14 @@ public class RouterRestUsuario {
                     operation = @Operation(
                             operationId = "registrarUsuario",
                             summary = "Registrar un nuevo usuario",
-                            requestBody = @RequestBody(
-                                    required = true,
-                                    content = @Content(schema = @Schema(implementation = UsuarioRequestDTO.class))
-                            ),
-                            responses = {
-                                    @ApiResponse(
-                                            responseCode = "201",
-                                            description = "Usuario creado",
-                                            content = @Content(
-                                                    schema = @Schema(implementation = UsuarioRequestDTO.class)
-                                            )
-                                    )
-                            }
+                            requestBody = @RequestBody(required = true,
+                                    content = @Content(schema = @Schema(implementation = UsuarioRequestDTO.class))),
+                            responses = {@ApiResponse(responseCode = "201", description = "Usuario creado")}
                     )
             ),
-
-            // ================== PUT (EDITAR) ==================
+            // PUT (editar usuario)
             @RouterOperation(
-                    path = "/api/v1/usuarios",
+                    path = BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.PUT,
                     beanClass = HandlerUsuario.class,
@@ -107,26 +93,15 @@ public class RouterRestUsuario {
                     operation = @Operation(
                             operationId = "editUser",
                             summary = "Editar un usuario existente",
-                            requestBody = @RequestBody(
-                                    required = true,
-                                    content = @Content(schema = @Schema(implementation = UsuarioRequestDTO.class))
-                            ),
                             responses = {
-                                    @ApiResponse(
-                                            responseCode = "200",
-                                            description = "Usuario actualizado",
-                                            content = @Content(
-                                                    schema = @Schema(implementation = UsuarioRequestDTO.class)
-                                            )
-                                    ),
+                                    @ApiResponse(responseCode = "200", description = "Usuario actualizado"),
                                     @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
                             }
                     )
             ),
-
-            // ================== DELETE ==================
+            // DELETE
             @RouterOperation(
-                    path = "/api/v1/usuarios/{id}",
+                    path = BASE_PATH + PATH_ID,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.DELETE,
                     beanClass = HandlerUsuario.class,
@@ -142,12 +117,13 @@ public class RouterRestUsuario {
             )
     })
     public RouterFunction<ServerResponse> routerFunction(HandlerUsuario handler) {
-        return route(POST("/api/v1/usuarios"), handler::registrarUsuario)
-                .andRoute(GET("/api/v1/usuarios"), handler::getAllUsers)
-                .andRoute(GET("/api/v1/usuarios/{id}"), handler::getUserById)
-                .andRoute(PUT("/api/v1/usuarios"), handler::editUser)
-                .andRoute(DELETE("/api/v1/usuarios/{id}"), handler::deleteUser)
-                .andRoute(GET("/api/v1/usuarios/exists/email/{email}"), handler::existsByEmail)
-                .andRoute(GET("/api/v1/usuarios/exists/documento/{documento}"), handler::existsByDocumento);
+        // Asociación de rutas con métodos del handler
+        return route(POST(BASE_PATH), handler::registrarUsuario)
+                .andRoute(GET(BASE_PATH), handler::getAllUsers)
+                .andRoute(GET(BASE_PATH + PATH_ID), handler::getUserById)
+                .andRoute(PUT(BASE_PATH), handler::editUser)
+                .andRoute(DELETE(BASE_PATH + PATH_ID), handler::deleteUser)
+                .andRoute(GET(BASE_PATH + PATH_EXISTS_EMAIL), handler::existsByEmail)
+                .andRoute(GET(BASE_PATH + PATH_EXISTS_DOC), handler::existsByDocumento);
     }
 }
