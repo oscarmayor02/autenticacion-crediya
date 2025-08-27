@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 /**
  * Puerto (interfaz) del repositorio de usuarios.
  *
- * 🔹 Define las operaciones que el sistema necesita para manipular usuarios.
- * 🔹 Hace parte del dominio y sigue el principio de inversión de dependencias (Clean Architecture).
+ *   Define las operaciones que el sistema necesita para manipular usuarios.
+ *   Hace parte del dominio y sigue el principio de inversión de dependencias (Clean Architecture).
  */
 public interface UserRepository {
 
