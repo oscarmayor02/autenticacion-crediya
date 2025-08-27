@@ -6,9 +6,11 @@ import co.com.pragma.autenticacion.usecase.exceptions.DuplicateException;
 import co.com.pragma.autenticacion.usecase.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -17,6 +19,7 @@ import java.math.BigDecimal;
 import static org.mockito.Mockito.*;
 
 // Test unitario para la lógica del UserUseCase con mocks del repositorio.
+@ExtendWith(MockitoExtension.class)
 class UserUseCaseTest {
 
     @Mock
@@ -29,8 +32,6 @@ class UserUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this); // Inicializa los mocks.
-
         //  Instanciamos un usuario válido
         user = new User();
         user.setIdNumber(1L);

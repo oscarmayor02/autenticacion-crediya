@@ -35,6 +35,11 @@ subprojects {
         testCompileOnly  "org.projectlombok:lombok:${lombokVersion}"
         testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+        implementation 'org.springframework.security:spring-security-crypto'
+        implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+        runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+        runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
     }
 
     tasks.withType(Test).configureEach {
