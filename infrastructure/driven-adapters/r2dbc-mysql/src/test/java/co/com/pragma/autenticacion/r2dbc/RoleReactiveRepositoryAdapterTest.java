@@ -36,7 +36,7 @@ class RoleReactiveRepositoryAdapterTest {
         role = Role.builder()
                 .uniqueId(1)
                 .name("ADMIN")
-                .descripcion("Administrador del sistema")
+                .description("Administrador del sistema")
                 .build();
 
         // Creamos la entidad correspondiente
@@ -79,7 +79,7 @@ class RoleReactiveRepositoryAdapterTest {
         Role updatedRole = Role.builder()
                 .uniqueId(1)
                 .name("SUPER_ADMIN")
-                .descripcion("Administrador principal")
+                .description("Administrador principal")
                 .build();
 
         RoleEntity updatedEntity = RoleEntity.builder()

@@ -38,7 +38,7 @@ class UserUseCaseTest {
         user.setLastName("Mayor");
         user.setEmail("oscar@test.com");
         user.setIdentityDocument("12345678");
-        user.setBaseSalary(new BigDecimal("2000000"));
+        user.setBaseSalary(new BigDecimal("1000000"));
         user.setDateOfBirth("1990-05-10");
     }
 //agregar datamock

@@ -21,9 +21,9 @@ class UserTest {
                 .address("Calle 123")
                 .telephone("3001234567")
                 .email("juan.perez@test.com")
-                .BaseSalary(BigDecimal.valueOf(2500000))
-                .IdentityDocument("987654321")
-                .idRol(BigDecimal.valueOf(1))
+                .baseSalary(BigDecimal.valueOf(2500000))
+                .identityDocument("987654321")
+                .idRole(BigDecimal.valueOf(1))
                 .build();
 
         assertEquals(12345L, user.getIdNumber());
@@ -49,7 +49,7 @@ class UserTest {
         User user = new User(456L, "Ana", "Martínez", "1985-05-05",
                 "Carrera 45", "3100000000", "ana@test.com",
                 BigDecimal.valueOf(3500000), "11223344",
-                BigDecimal.valueOf(2));
+                BigDecimal.valueOf(2), "hashedPassword");
 
         assertEquals(456L, user.getIdNumber());
         assertEquals("Ana", user.getName());

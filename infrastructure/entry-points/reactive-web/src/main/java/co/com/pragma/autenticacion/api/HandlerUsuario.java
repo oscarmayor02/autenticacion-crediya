@@ -28,19 +28,21 @@ public class HandlerUsuario {
 
     private static final Logger log = LoggerFactory.getLogger(HandlerUsuario.class);
 
-    private final UserUseCase userUseCase; // Caso de uso de usuario
-    private final UserApiMapper userApiMapper; // Mapper DTO ↔ Dominio
-    private final Validator validator; // Bean de validación de jakarta
-    private final PasswordEncoderPort passwordEncoder; // NUEVO
+    private final UserUseCase userUseCase;         // Caso de uso de usuario
+    private final UserApiMapper userApiMapper;     // Mapper DTO ↔ Dominio
+    private final Validator validator;             // Bean de validación de Jakarta
+    private final PasswordEncoderPort passwordEncoder; // Puerto para hashear password
 
     /**
      * Registrar usuario
      */
     public Mono<ServerResponse> registerUser(ServerRequest request) {
 
+        // Paso 1: Leer el body del request como DTO
         return request.bodyToMono(UserRequestDTO.class)
+
+                // Paso 2: Validar campos con Jakarta Validator
                 .flatMap(dto -> {
-                    // Validaciones básicas del DTO
                     var violations = validator.validate(dto);
                     if (!violations.isEmpty()) {
                         String errs = violations.stream()
@@ -48,40 +50,48 @@ public class HandlerUsuario {
                                 .collect(Collectors.joining(", "));
                         return Mono.error(new ValidationException(errs));
                     }
+                    return Mono.just(dto);
+                })
 
-                    // Validar si email ya existe
-                    return userUseCase.existsByEmail(dto.getEmail())
-                            .flatMap(emailExists -> {
-                                if (emailExists) {
-                                    return Mono.error(new ValidationException(AuthConstants.MSG_DUPLICATE_EMAIL));
-                                }
-                                return Mono.just(dto);
-                            });
-                })
-                .flatMap(dto -> {
-                    // Validar si documento ya existe
-                    return userUseCase.existsByDocument(dto.getIdentityDocument())
-                            .flatMap(docExists -> {
-                                if (docExists) {
-                                    return Mono.error(new ValidationException(AuthConstants.MSG_DUPLICATE_DOCUMENT));
-                                }
-                                return Mono.just(dto);
-                            });
-                })
-                // Hash de password ANTES de mapear a dominio
+                // Paso 3: Validar email existente usando filterWhen
+                .filterWhen(dto -> userUseCase.existsByEmail(dto.getEmail())
+                        .map(exists -> !exists)) // pasa solo si NO existe
+                .switchIfEmpty(Mono.error(new ValidationException(AuthConstants.MSG_DUPLICATE_EMAIL)))
+
+                // Paso 4: Validar documento existente
+                .filterWhen(dto -> userUseCase.existsByDocument(dto.getIdentityDocument())
+                        .map(exists -> !exists)) // pasa solo si NO existe
+                .switchIfEmpty(Mono.error(new ValidationException(AuthConstants.MSG_DUPLICATE_DOCUMENT)))
+
+                // Paso 5: Hashear password de manera reactiva
                 .flatMap(dto -> passwordEncoder.encode(dto.getPassword())
                         .map(hash -> {
-                            dto.setPassword(hash); // reemplaza por hash
+                            dto.setPassword(hash);
                             return dto;
                         })
                 )
+
+                // Paso 6: Mapear DTO a modelo de dominio
                 .map(userApiMapper::toDomain)
+
+                // Paso 7: Guardar usuario usando caso de uso
                 .flatMap(userUseCase::saveUser)
-                .flatMap(savedUser -> ServerResponse.ok()
+
+                // Paso 8: Mapear de vuelta a DTO para la respuesta
+                .map(userApiMapper::toResponseDTO)
+
+                // Paso 9: Construir respuesta HTTP
+                .flatMap(savedDto -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(userApiMapper.toResponseDTO(savedUser)))
+                        .bodyValue(savedDto))
+
+                // Logging de éxito
                 .doOnSuccess(u -> log.info(AuthConstants.MGS_USER_CREATE_OK, u))
+
+                // Logging de error
                 .doOnError(e -> log.error(AuthConstants.MSG_INVALID_CREATE_USER, e.getMessage()))
+
+                // Manejo de errores finales
                 .onErrorResume(e -> {
                     if (e instanceof ValidationException || e instanceof DuplicateException) {
                         return ServerResponse.badRequest()
@@ -98,8 +108,10 @@ public class HandlerUsuario {
      * Obtener todos los usuarios
      */
     public Mono<ServerResponse> getAllUsers(ServerRequest request) {
+        // Flux de usuarios mapeado a DTO
         Flux<UserRequestDTO> users = userUseCase.getAllUsers()
                 .map(userApiMapper::toDTO);
+
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(users, UserRequestDTO.class)
@@ -113,13 +125,13 @@ public class HandlerUsuario {
     public Mono<ServerResponse> getUserById(ServerRequest request) {
         Long id = Long.parseLong(request.pathVariable("id"));
         log.info("Consultando usuario con id: {}", id);
+
         return userUseCase.getUserByIdNumber(id)
                 .map(userApiMapper::toDTO)
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(user))
-                .onErrorResume(NotFoundException.class, e -> ServerResponse
-                        .notFound().build());
+                .onErrorResume(NotFoundException.class, e -> ServerResponse.notFound().build());
     }
 
     /**
@@ -127,9 +139,9 @@ public class HandlerUsuario {
      */
     public Mono<ServerResponse> editUser(ServerRequest request) {
         return request.bodyToMono(UserRequestDTO.class)
-                .map(userApiMapper::toDomain)
-                .flatMap(userUseCase::editUser)
-                .map(userApiMapper::toDTO)
+                .map(userApiMapper::toDomain)           // Mapear DTO → dominio
+                .flatMap(userUseCase::editUser)         // Editar usuario reactivo
+                .map(userApiMapper::toDTO)              // Mapear dominio → DTO
                 .flatMap(user -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(user))
@@ -144,6 +156,7 @@ public class HandlerUsuario {
     public Mono<ServerResponse> deleteUser(ServerRequest request) {
         Long id = Long.parseLong(request.pathVariable("id"));
         log.info("Eliminando usuario con id: {}", id);
+
         return userUseCase.deleteUser(id)
                 .then(ServerResponse.noContent().build())
                 .doOnSuccess(u -> log.info(AuthConstants.MSG_USER_DELETE_OK, id))
@@ -156,6 +169,7 @@ public class HandlerUsuario {
      */
     public Mono<ServerResponse> existsByEmail(ServerRequest request) {
         String email = request.pathVariable("email");
+
         return userUseCase.existsByEmail(email)
                 .flatMap(exists -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -168,6 +182,7 @@ public class HandlerUsuario {
      */
     public Mono<ServerResponse> existsByDocument(ServerRequest request) {
         String doc = request.pathVariable("documento");
+
         return userUseCase.existsByDocument(doc)
                 .flatMap(exists -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)

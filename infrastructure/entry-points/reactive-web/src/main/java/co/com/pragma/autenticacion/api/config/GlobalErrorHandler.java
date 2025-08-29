@@ -5,14 +5,17 @@ import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.*;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.Collections;
+
 @Slf4j
 @Component
 @Order(-2)
@@ -23,22 +26,42 @@ public class GlobalErrorHandler implements WebExceptionHandler {
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
-        Object body;
+        ErrorResponse errorResponse;
 
         if (ex instanceof ValidationException ve) {
-            //volver errorresponse
-            body = Map.of("code", "VALIDATION_ERROR", "errors", List.of(ve.getMessage()));
+            errorResponse = ErrorResponse.builder()
+                    .code("VALIDATION_ERROR")
+                    .message("Error de validación")
+                    .errors(Collections.singletonList(ve.getMessage()))
+                    .timestamp(Instant.now())
+                    .path(exchange.getRequest().getPath().toString())
+                    .build();
 
         } else if (ex instanceof DomainException de) {
-            body = Map.of("code", de.getCode(), "message", de.getMessage());
+            errorResponse = ErrorResponse.builder()
+                    .code(de.getCode())
+                    .message(de.getMessage())
+                    .timestamp(Instant.now())
+                    .path(exchange.getRequest().getPath().toString())
+                    .build();
+
         } else {
             log.error("Error no controlado", ex);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
-            body = Map.of("code", "INTERNAL_ERROR", "message", "Ha ocurrido un error");
+            errorResponse = ErrorResponse.builder()
+                    .code("INTERNAL_ERROR")
+                    .message("Ha ocurrido un error inesperado")
+                    .timestamp(Instant.now())
+                    .path(exchange.getRequest().getPath().toString())
+                    .build();
         }
 
+        return writeResponse(exchange, status, errorResponse);
+    }
+
+    private Mono<Void> writeResponse(ServerWebExchange exchange, HttpStatus status, ErrorResponse errorResponse) {
         try {
-            String json = objectMapper.writeValueAsString(body);
+            String json = objectMapper.writeValueAsString(errorResponse);
             var resp = exchange.getResponse();
             resp.setStatusCode(status);
             resp.getHeaders().setContentType(MediaType.APPLICATION_JSON);

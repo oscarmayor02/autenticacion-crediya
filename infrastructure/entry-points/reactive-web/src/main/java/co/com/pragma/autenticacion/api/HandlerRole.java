@@ -32,30 +32,14 @@ public class HandlerRole {
      */
     public Mono<ServerResponse> crearRol(ServerRequest request) {
         return request.bodyToMono(RoleDTO.class)
-                .map(dto -> {
-                    log.info("Petición para crear rol: {}", dto.getNombre());
-                    var violations = validator.validate(dto);
-                    if (!violations.isEmpty()) {
-                        String errs = violations.stream()
-                                .map(ConstraintViolation::getMessage)
-                                .collect(Collectors.joining(", "));
-                        throw new ValidationException(errs);
-                    }
-                    return Role.builder()
-                            .uniqueId(dto.getUniqueId())
-                            .name(dto.getNombre())
-                            .description(dto.getDescripcion())
-                            .build();
-                })
-                .flatMap(roleUseCase::createRole)
-                .flatMap(savedRol -> ServerResponse.status(201)
+                .map(this::validateDto) // Validamos DTO y lo convertimos a dominio
+                .flatMap(roleUseCase::createRole) // Llamada asíncrona al caso de uso
+                .flatMap(savedRol -> ServerResponse.status(201) // Construimos respuesta HTTP 201
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(savedRol))
                 .doOnSuccess(r -> log.info(AuthConstants.VALIDATION_ROLE_CREATE, r))
                 .doOnError(e -> log.error(AuthConstants.MSG_INVALID_CREATE_ROL, e.getMessage()))
-                .onErrorResume(e -> ServerResponse.badRequest()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue("{\"error\":\"" + e.getMessage() + "\"}"));
+                .onErrorResume(this::handleError); // Manejo de errores
     }
 
     /**
@@ -68,7 +52,7 @@ public class HandlerRole {
                 .flatMap(rol -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(rol))
-                .switchIfEmpty(ServerResponse.notFound().build());
+                .switchIfEmpty(ServerResponse.notFound().build()); // Si no existe, 404
     }
 
     /**
@@ -76,8 +60,8 @@ public class HandlerRole {
      */
     public Mono<ServerResponse> updateRole(ServerRequest request) {
         return request.bodyToMono(RoleDTO.class)
-                .map(this::validateDto)
-                .flatMap(roleUseCase::updateRole)
+                .map(this::validateDto) // Validamos DTO
+                .flatMap(roleUseCase::updateRole) // Llamada asíncrona al caso de uso
                 .flatMap(updatedRol -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(updatedRol))
@@ -93,14 +77,14 @@ public class HandlerRole {
         Long id = Long.valueOf(request.pathVariable("uniqueId"));
         log.info("Eliminando rol con ID: {}", id);
         return roleUseCase.deleteRole(id)
-                .then(ServerResponse.noContent().build())
+                .then(ServerResponse.noContent().build()) // Retornamos 204 No Content
                 .doOnSuccess(r -> log.info("Role eliminado con ID: {}", id))
                 .doOnError(e -> log.error("Error eliminando rol: {}", e.getMessage()))
                 .onErrorResume(this::handleError);
     }
 
     /**
-     * Validar DTO de rol
+     * Validar DTO y mapear a dominio
      */
     private Role validateDto(RoleDTO dto) {
         var violations = validator.validate(dto);
@@ -118,7 +102,7 @@ public class HandlerRole {
     }
 
     /**
-     * Manejo general de errores
+     * Manejo de errores reactivo
      */
     private Mono<ServerResponse> handleError(Throwable e) {
         log.error("Error: {}", e.getMessage());

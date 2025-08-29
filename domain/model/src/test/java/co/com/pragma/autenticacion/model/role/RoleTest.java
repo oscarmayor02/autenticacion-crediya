@@ -16,13 +16,13 @@ class RoleTest {
         Role role = Role.builder()
                 .uniqueId(1)
                 .name("ADMIN")
-                .descripcion("Administrador del sistema")
+                .description("Administrador del sistema")
                 .build();
 
         // Validaciones
         assertEquals(1, role.getUniqueId());
         assertEquals("ADMIN", role.getName());
-        assertEquals("Administrador del sistema", role.getDescripcion());
+        assertEquals("Administrador del sistema", role.getDescription());
     }
 
     @Test
@@ -31,11 +31,11 @@ class RoleTest {
 
         role.setUniqueId(2);
         role.setName("USER");
-        role.setDescripcion("Usuario estándar");
+        role.setDescription("Usuario estándar");
 
         assertEquals(2, role.getUniqueId());
         assertEquals("USER", role.getName());
-        assertEquals("Usuario estándar", role.getDescripcion());
+        assertEquals("Usuario estándar", role.getDescription());
     }
 
     @Test
@@ -44,6 +44,6 @@ class RoleTest {
 
         assertEquals(3, role.getUniqueId());
         assertEquals("GUEST", role.getName());
-        assertEquals("Usuario invitado", role.getDescripcion());
+        assertEquals("Usuario invitado", role.getDescription());
     }
 }
