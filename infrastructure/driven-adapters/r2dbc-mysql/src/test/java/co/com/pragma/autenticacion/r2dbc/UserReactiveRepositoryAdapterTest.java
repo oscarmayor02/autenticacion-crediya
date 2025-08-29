@@ -3,7 +3,7 @@ package co.com.pragma.autenticacion.r2dbc;
 
 import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.r2dbc.entity.UserEntity;
-import co.com.pragma.autenticacion.r2dbc.mapper.UsuarioR2dbcMapper;
+import co.com.pragma.autenticacion.r2dbc.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,10 +23,10 @@ import static org.mockito.Mockito.*;
 class UserReactiveRepositoryAdapterTest {
 
     @Mock
-    private UsuarioReactiveRepository repo; // Mock del repositorio reactivo
+    private UserReactiveRepository repo; // Mock del repositorio reactivo
 
     @Mock
-    private UsuarioR2dbcMapper mapper; // Mock del mapper de entidad a dominio
+    private UserMapper mapper; // Mock del mapper de entidad a dominio
 
     @Mock
     private TransactionalOperator tx; // Mock del operador transaccional

@@ -1,10 +1,11 @@
 package co.com.pragma.autenticacion.r2dbc;
 
+import co.com.pragma.autenticacion.model.auth.AuthConstants;
 import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.model.user.gateways.UserRepository;
 import co.com.pragma.autenticacion.r2dbc.entity.UserEntity;
 import co.com.pragma.autenticacion.r2dbc.helper.ReactiveAdapterOperations;
-import co.com.pragma.autenticacion.r2dbc.mapper.UsuarioR2dbcMapper;
+import co.com.pragma.autenticacion.r2dbc.mapper.UserMapper;
 import co.com.pragma.autenticacion.usecase.exceptions.NotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -23,21 +24,21 @@ import java.math.BigDecimal;
  */
 @Repository
 public class UserReactiveRepositoryAdapter
-        extends ReactiveAdapterOperations<User, UserEntity, Long, UsuarioReactiveRepository>
+        extends ReactiveAdapterOperations<User, UserEntity, Long, UserReactiveRepository>
         implements UserRepository {
 
-    private final UsuarioReactiveRepository usuarioReactiveRepository;
-    private final UsuarioR2dbcMapper usuarioMapper;
+    private final UserReactiveRepository userReactiveRepository;
+    private final UserMapper usuarioMapper;
     private final TransactionalOperator transactionalOperator;
 
     /**
      * Constructor: inyecta repositorio, mapper y operador transaccional.
      */
-    public UserReactiveRepositoryAdapter(UsuarioReactiveRepository repository,
-                                         UsuarioR2dbcMapper usuarioMapper,
+    public UserReactiveRepositoryAdapter(UserReactiveRepository repository,
+                                         UserMapper usuarioMapper,
                                          TransactionalOperator transactionalOperator) {
         super(repository, null, usuarioMapper::toModel);
-        this.usuarioReactiveRepository = repository;
+        this.userReactiveRepository = repository;
         this.usuarioMapper = usuarioMapper;
         this.transactionalOperator = transactionalOperator;
     }
@@ -53,7 +54,7 @@ public class UserReactiveRepositoryAdapter
     public Mono<User> saveUser(User user) {
         return Mono.defer(() -> {
             UserEntity entity = usuarioMapper.toEntity(user);
-            return usuarioReactiveRepository.save(entity)
+            return userReactiveRepository.save(entity)
                     .map(usuarioMapper::toModel);
         }).as(transactionalOperator::transactional);
     }
@@ -64,7 +65,7 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Flux<User> getAllUsers() {
-        return usuarioReactiveRepository.findAll()
+        return userReactiveRepository.findAll()
                 .map(usuarioMapper::toModel);
     }
 
@@ -74,9 +75,9 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Mono<User> getUserByIdNumber(Long idNumber) {
-        return usuarioReactiveRepository.findById(idNumber)
+        return userReactiveRepository.findById(idNumber)
                 .map(usuarioMapper::toModel)
-                .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + idNumber)));
+                .switchIfEmpty(Mono.error(new NotFoundException(AuthConstants.VALIDATION_USER_NOT_FOUND_ID + idNumber)));
     }
 
     /**
@@ -88,12 +89,12 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Mono<User> editUser(User user) {
-        return usuarioReactiveRepository.findById(user.getIdNumber())
-                .switchIfEmpty(Mono.error(new NotFoundException("No se pudo actualizar, usuario no encontrado")))
+        return userReactiveRepository.findById(user.getIdNumber())
+                .switchIfEmpty(Mono.error(new NotFoundException(AuthConstants.VALIDATION_USER_NOT_FOUND_UPDATE)))
                 .flatMap(existing -> {
                     UserEntity updated = usuarioMapper.toEntity(user);
-                    updated.setIdUsuario(existing.getIdUsuario()); // preserva el ID generado en la BD
-                    return usuarioReactiveRepository.save(updated)
+                    updated.setIdUser(existing.getIdUser()); // preserva el ID generado en la BD
+                    return userReactiveRepository.save(updated)
                             .map(usuarioMapper::toModel);
                 })
                 .as(transactionalOperator::transactional);
@@ -105,7 +106,7 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Mono<Void> deleteUser(Long idNumber) {
-        return usuarioReactiveRepository.deleteById(idNumber)
+        return userReactiveRepository.deleteById(idNumber)
                 .as(transactionalOperator::transactional);
     }
 
@@ -114,15 +115,15 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Mono<Boolean> existsByEmail(String email) {
-        return usuarioReactiveRepository.existsByCorreoElectronico(email);
+        return userReactiveRepository.existsByEmail(email);
     }
 
     /**
      * Verifica si ya existe un usuario con un documento de identidad dado.
      */
     @Override
-    public Mono<Boolean> existsByDocumento(String documentoIdentidad) {
-        return usuarioReactiveRepository.existsByDocumentoIdentidad(documentoIdentidad);
+    public Mono<Boolean> existsByDocument(String documentoIdentidad) {
+        return userReactiveRepository.existsByIdentityDocument(documentoIdentidad);
     }
 
     /**
@@ -130,12 +131,12 @@ public class UserReactiveRepositoryAdapter
      */
     @Override
     public Mono<Boolean> existsRoleById(BigDecimal idRol) {
-        return usuarioReactiveRepository.existsByRolId(idRol.longValue());
+        return userReactiveRepository.existsByRoleId(idRol.longValue());
     }
 
     @Override
     public Mono<User> getByEmail(String email) {
-        return usuarioReactiveRepository.findByCorreoElectronico(email)
+        return userReactiveRepository.findByEmail(email)
                 .map(usuarioMapper::toModel);
     }
 }

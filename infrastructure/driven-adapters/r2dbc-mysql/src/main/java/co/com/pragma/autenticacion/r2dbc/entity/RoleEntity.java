@@ -8,7 +8,7 @@ import org.springframework.data.relational.core.mapping.Table;
 /**
  * Mapper de MapStruct para convertir entre:
  * - Entidad persistente (RoleEntity)
- * - Modelo de dominio (Rol)
+ * - Modelo de dominio (Role)
  */
 @Table(name = "roles")
 @AllArgsConstructor
@@ -18,8 +18,8 @@ import org.springframework.data.relational.core.mapping.Table;
 @Builder
 public class RoleEntity {
     @Id
-    @Column("rol_id")
-    private Long idRol;
-    private String nombre;
-    private String descripcion;
+    @Column("role_id")
+    private Long idRole;
+    private String name;
+    private String description;
 }

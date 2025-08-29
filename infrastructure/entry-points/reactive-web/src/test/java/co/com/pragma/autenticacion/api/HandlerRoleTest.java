@@ -1,15 +1,12 @@
 package co.com.pragma.autenticacion.api;
 
-import co.com.pragma.autenticacion.api.dto.RolDTO;
-import co.com.pragma.autenticacion.model.rol.Rol;
-import co.com.pragma.autenticacion.usecase.rol.RolUseCase;
-import org.assertj.core.api.Assertions;
+import co.com.pragma.autenticacion.api.dto.RoleDTO;
+import co.com.pragma.autenticacion.model.role.Role;
+import co.com.pragma.autenticacion.usecase.rol.RoleUseCase;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -24,17 +21,17 @@ class HandlerRoleTest {
     private WebTestClient webTestClient;
 
     @MockBean
-    private RolUseCase rolUseCase;
+    private RoleUseCase roleUseCase;
 
 
     @Test
     void crearRol_success() {
-        Rol rol = Rol.builder().uniqueId(1).nombre("ADMIN").descripcion("Rol de prueba").build();
-        when(rolUseCase.crearRol(any(Rol.class))).thenReturn(Mono.just(rol));
+        Role role = Role.builder().uniqueId(1).name("ADMIN").descripcion("Role de prueba").build();
+        when(roleUseCase.createRole(any(Role.class))).thenReturn(Mono.just(role));
 
-        RolDTO dto = new RolDTO();
+        RoleDTO dto = new RoleDTO();
         dto.setNombre("ADMIN");
-        dto.setDescripcion("Rol de prueba");
+        dto.setDescripcion("Role de prueba");
 
         webTestClient.post()
                 .uri("/api/v1/roles")
@@ -44,12 +41,12 @@ class HandlerRoleTest {
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.nombre").isEqualTo("ADMIN")
-                .jsonPath("$.descripcion").isEqualTo("Rol de prueba");
+                .jsonPath("$.descripcion").isEqualTo("Role de prueba");
     }
 
     @Test
     void crearRol_validationError() {
-        RolDTO dto = new RolDTO(); // nombre null => error de validación
+        RoleDTO dto = new RoleDTO(); // nombre null => error de validación
 
         webTestClient.post()
                 .uri("/api/v1/roles")

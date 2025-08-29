@@ -9,7 +9,7 @@ package co.com.pragma.autenticacion.usecase.exceptions;
  */
 public abstract class DomainException extends RuntimeException {
 
-    private final String code; // 👉 código único de error
+    private final String code; //  código único de error
 
     public DomainException(String code, String message) {
         super(message); // Mensaje descriptivo

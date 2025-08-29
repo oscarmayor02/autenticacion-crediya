@@ -4,6 +4,7 @@ package co.com.pragma.autenticacion.api;
 import co.com.pragma.autenticacion.api.dto.LoginRequest;
 import co.com.pragma.autenticacion.api.dto.RefreshRequest;
 import co.com.pragma.autenticacion.api.dto.TokenResponse;
+import co.com.pragma.autenticacion.model.auth.AuthConstants;
 import co.com.pragma.autenticacion.model.auth.AuthCredentials;
 import co.com.pragma.autenticacion.model.tokeninfo.TokenInfo;
 import co.com.pragma.autenticacion.usecase.auth.AuthUseCase;
@@ -24,24 +25,24 @@ public class AuthHandler {
 
     public Mono<ServerResponse> login(ServerRequest request) {
         return request.bodyToMono(LoginRequest.class)
-                .switchIfEmpty(Mono.error(new ValidationException("Body requerido")))
+                .switchIfEmpty(Mono.error(new ValidationException(AuthConstants.MSG_BODY_REQUIRED)))
                 .flatMap(body -> authUseCase.login(AuthCredentials.builder()
                         .email(body.getEmail())
                         .password(body.getPassword())
                         .build()))
                 .map(this::toResponse)
                 .flatMap(resp -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(resp))
-                .doOnSuccess(r -> log.info("Login exitoso"))
+                .doOnSuccess(r -> log.info(AuthConstants.VALIDATION_LOGIN_SUCCESS))
                 .onErrorResume(ErrorResponses::toResponse);
     }
 
     public Mono<ServerResponse> refresh(ServerRequest request) {
         return request.bodyToMono(RefreshRequest.class)
-                .switchIfEmpty(Mono.error(new ValidationException("Body requerido")))
+                .switchIfEmpty(Mono.error(new ValidationException(AuthConstants.MSG_BODY_REQUIRED)))
                 .flatMap(body -> authUseCase.refresh(body.getRefreshToken()))
                 .map(this::toResponse)
                 .flatMap(resp -> ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(resp))
-                .doOnSuccess(r -> log.info("Refresh exitoso"))
+                .doOnSuccess(r -> log.info(AuthConstants.VALIDATION_REFRESH_SUCCESS))
                 .onErrorResume(ErrorResponses::toResponse);
     }
 

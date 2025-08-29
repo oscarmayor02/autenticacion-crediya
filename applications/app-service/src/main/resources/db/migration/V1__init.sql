@@ -3,29 +3,29 @@ CREATE DATABASE IF NOT EXISTS `${db}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unic
 
 -- Create roles table
 CREATE TABLE IF NOT EXISTS `${db}`.`roles` (
-                                               `rol_id` BIGINT NOT NULL AUTO_INCREMENT,
-                                               `nombre` VARCHAR(100) NOT NULL,
-    `descripcion` VARCHAR(255) NULL,
-    PRIMARY KEY (`rol_id`)
+                                               `role_id` BIGINT NOT NULL AUTO_INCREMENT,
+                                               `name` VARCHAR(100) NOT NULL,
+    `description` VARCHAR(255) NULL,
+    PRIMARY KEY (`role_id`)
     ) ENGINE=InnoDB;
 
 -- Create usuarios table
-CREATE TABLE IF NOT EXISTS `${db}`.`usuarios` (
-                                                  `id_usuario` BIGINT NOT NULL AUTO_INCREMENT,
-                                                  `nombre` VARCHAR(100) NOT NULL,
-    `apellido` VARCHAR(100) NOT NULL,
-    `fecha_nacimiento` VARCHAR(20) NULL,
-    `direccion` VARCHAR(200) NULL,
-    `telefono` VARCHAR(50) NULL,
-    `correo_electronico` VARCHAR(150) NULL,
-    `salario_base` DECIMAL(15,2) NULL,
-    `documento_identidad` VARCHAR(50) NULL,
+CREATE TABLE IF NOT EXISTS `${db}`.`users` (
+                                                  `id_user` BIGINT NOT NULL AUTO_INCREMENT,
+                                                  `name` VARCHAR(100) NOT NULL,
+    `last_name` VARCHAR(100) NOT NULL,
+    `date_of_birth` VARCHAR(20) NULL,
+    `address` VARCHAR(200) NULL,
+    `telephone` VARCHAR(50) NULL,
+    `email` VARCHAR(150) NULL,
+    `base_salary` DECIMAL(15,2) NULL,
+    `identity_document` VARCHAR(50) NULL,
     `password` VARCHAR(70) NULL,
-    `rol_id` BIGINT NULL,
-    PRIMARY KEY (`id_usuario`),
-    CONSTRAINT `fk_usuarios_roles` FOREIGN KEY (`rol_id`) REFERENCES `${db}`.`roles`(`rol_id`)
+    `role_id` BIGINT NULL,
+    PRIMARY KEY (`id_user`),
+    CONSTRAINT `fk_usuarios_roles` FOREIGN KEY (`role_id`) REFERENCES `${db}`.`roles`(`role_id`)
     ON UPDATE CASCADE ON DELETE SET NULL
     ) ENGINE=InnoDB;
 
 -- Helpful index for FK
-CREATE INDEX `idx_usuarios_rol_id` ON `${db}`.`usuarios` (`rol_id`);
+CREATE INDEX `idx_usuarios_rol_id` ON `${db}`.`users` (`role_id`);

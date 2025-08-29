@@ -13,11 +13,11 @@ import java.util.List;
 public class RolesResolverAdapter implements RolesResolver {
     @Override
     public List<String> resolve(User user) {
-        if (user.getIdRol() == null) return Collections.emptyList();
-        long rid = user.getIdRol().longValue();
-        if (rid == 1L) return List.of(AuthConstants.ROLE_ADMIN);
-        if (rid == 2L) return List.of(AuthConstants.ROLE_ASESOR);
-        if (rid == 3L) return List.of(AuthConstants.ROLE_CLIENTE);
+        if (user.getIdRole() == null) return Collections.emptyList();
+        long rid = user.getIdRole().longValue();
+        if (rid == 1L) return List.of(AuthConstants.ADMIN_ROLE);
+        if (rid == 2L) return List.of(AuthConstants.ADVISOR_ROLE);
+        if (rid == 3L) return List.of(AuthConstants.CLIENT_ROLE);
         return Collections.emptyList();
     }
 }

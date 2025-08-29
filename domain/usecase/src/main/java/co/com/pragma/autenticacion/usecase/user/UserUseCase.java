@@ -1,5 +1,6 @@
 package co.com.pragma.autenticacion.usecase.user;
 
+import co.com.pragma.autenticacion.model.auth.AuthConstants;
 import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.model.user.gateways.UserRepository;
 import co.com.pragma.autenticacion.usecase.exceptions.DuplicateException;
@@ -36,14 +37,14 @@ public class UserUseCase {
          * - Si alguno ya existe → lanzamos DuplicateException.
          */
         return Mono.zip(
-                userRepository.existsByEmail(user.getCorreoElectronico()),   // T1: ¿existe email?
-                userRepository.existsByDocumento(user.getDocumentoIdentidad()) // T2: ¿existe documento?
+                userRepository.existsByEmail(user.getEmail()),   // T1: ¿existe email?
+                userRepository.existsByDocument(user.getIdentityDocument()) // T2: ¿existe documento?
         ).flatMap(tuple -> {
             boolean emailExists = tuple.getT1();
             boolean docExists = tuple.getT2();
 
-            if (emailExists) return Mono.error(new DuplicateException("El correo ya está registrado"));
-            if (docExists) return Mono.error(new DuplicateException("El documento ya está registrado"));
+            if (emailExists) return Mono.error(new DuplicateException(AuthConstants.MSG_DUPLICATE_EMAIL));
+            if (docExists) return Mono.error(new DuplicateException(AuthConstants.MSG_DUPLICATE_DOCUMENT));
 
             // Si no hay duplicados → guardamos el usuario
             return userRepository.saveUser(user);
@@ -59,13 +60,13 @@ public class UserUseCase {
     public Mono<User> getUserByIdNumber(Long idNumber) {
         // switchIfEmpty → si no encuentra nada, lanza NotFoundException
         return userRepository.getUserByIdNumber(idNumber)
-                .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + idNumber)));
+                .switchIfEmpty(Mono.error(new NotFoundException(AuthConstants.VALIDATION_USER_NOT_FOUND_ID + idNumber)));
     }
 
     // ---------------------- UPDATE ----------------------
     public Mono<User> editUser(User user) {
         return userRepository.getUserByIdNumber(user.getIdNumber())
-                .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + user.getIdNumber())))
+                .switchIfEmpty(Mono.error(new NotFoundException(AuthConstants.VALIDATION_USER_NOT_FOUND_ID + user.getIdNumber())))
                 .flatMap(existing -> {
                     validateUser(user); // validamos antes de editar
                     return userRepository.editUser(user);
@@ -75,7 +76,7 @@ public class UserUseCase {
     // ---------------------- DELETE ----------------------
     public Mono<Void> deleteUser(Long idNumber) {
         return userRepository.getUserByIdNumber(idNumber)
-                .switchIfEmpty(Mono.error(new NotFoundException("Usuario no encontrado con id: " + idNumber)))
+                .switchIfEmpty(Mono.error(new NotFoundException(AuthConstants.VALIDATION_USER_NOT_FOUND_ID + idNumber)))
                 .flatMap(existing -> userRepository.deleteUser(idNumber));
     }
 
@@ -84,40 +85,40 @@ public class UserUseCase {
         return userRepository.existsByEmail(email);
     }
 
-    public Mono<Boolean> existsByDocumento(String documentoIdentidad) {
-        return userRepository.existsByDocumento(documentoIdentidad);
+    public Mono<Boolean> existsByDocument(String documentoIdentidad) {
+        return userRepository.existsByDocument(documentoIdentidad);
     }
 
     // ---------------------- VALIDACIONES ----------------------
     private void validateUser(User user) {
-        if (isNullOrEmpty(user.getNombre())) throw new ValidationException("El nombre no puede estar vacío");
-        if (isNullOrEmpty(user.getApellido())) throw new ValidationException("El apellido no puede estar vacío");
+        if (isNullOrEmpty(user.getName())) throw new ValidationException(AuthConstants.VALIDATION_NAME_REQUIRED);
+        if (isNullOrEmpty(user.getLastName())) throw new ValidationException(AuthConstants.VALIDATION_LASTNAME_REQUIRED);
 
-        validateEmail(user.getCorreoElectronico());
-        validateSalario(user.getSalarioBase());
-        validateFechaNacimiento(user.getFechaNacimiento());
+        validateEmail(user.getEmail());
+        validateSalary(user.getBaseSalary());
+        validateDateOfBirth(user.getDateOfBirth());
     }
 
     private void validateEmail(String email) {
-        if (isNullOrEmpty(email)) throw new ValidationException("El correo electrónico es obligatorio");
+        if (isNullOrEmpty(email)) throw new ValidationException(AuthConstants.VALIDATION_EMAIL_REQUIRED);
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$"))
-            throw new ValidationException("Formato de correo inválido");
+            throw new ValidationException(AuthConstants.VALIDATION_EMAIL_FORMAT);
     }
 
-    private void validateSalario(BigDecimal salario) {
-        if (salario == null) throw new ValidationException("El salario base es obligatorio");
-        if (salario.compareTo(BigDecimal.ZERO) < 0 || salario.compareTo(new BigDecimal("15000000")) > 0)
-            throw new ValidationException("El salario base debe estar entre 0 y 15.000.000");
+    private void validateSalary(BigDecimal salario) {
+        if (salario == null) throw new ValidationException(AuthConstants.VALIDATION_SALARY_REQUIRED);
+        if (salario.compareTo(BigDecimal.ZERO) < 0 || salario.compareTo(new BigDecimal("1500000")) > 0)
+            throw new ValidationException(AuthConstants.VALIDATION_SALARY_RANGE);
     }
 
-    private void validateFechaNacimiento(String fechaNacimiento) {
-        if (isNullOrEmpty(fechaNacimiento)) throw new ValidationException("La fecha de nacimiento es obligatoria");
+    private void validateDateOfBirth(String dateOfBirth) {
+        if (isNullOrEmpty(dateOfBirth)) throw new ValidationException(AuthConstants.VALIDATION_DOB_REQUIRED);
         try {
-            LocalDate fecha = LocalDate.parse(fechaNacimiento, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            LocalDate fecha = LocalDate.parse(dateOfBirth, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             int edad = Period.between(fecha, LocalDate.now()).getYears();
-            if (edad < 18) throw new ValidationException("El usuario debe ser mayor de edad (18 años o más)");
+            if (edad < 18) throw new ValidationException(AuthConstants.VALIDATION_DOB_UNDERAGE);
         } catch (DateTimeParseException e) {
-            throw new ValidationException("Formato de fecha inválido. Debe ser yyyy-MM-dd");
+            throw new ValidationException(AuthConstants.VALIDATION_DOB_FORMAT);
         }
     }
 

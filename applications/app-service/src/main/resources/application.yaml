@@ -48,9 +48,9 @@ springdoc:
     path: /swagger-ui.html
 security:
   jwt:
-    secret: "${JWT_SECRET:change_this_very_long_secret_key_32_chars_min}"
-    access-token-validity-ms: 900000
-    refresh-token-validity-ms: 86400000
+    secret: "${JWT_SECRET:ChangeThisSecretKeyToASecureLongRandomValue!@PrAgma2024}"
+    access-token-validity-ms: 9000000
+    refresh-token-validity-ms: 864000000
 logging:
   level:
     co.com.pragma.autenticacion: INFO

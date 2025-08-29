@@ -26,6 +26,7 @@ public class GlobalErrorHandler implements WebExceptionHandler {
         Object body;
 
         if (ex instanceof ValidationException ve) {
+            //volver errorresponse
             body = Map.of("code", "VALIDATION_ERROR", "errors", List.of(ve.getMessage()));
 
         } else if (ex instanceof DomainException de) {

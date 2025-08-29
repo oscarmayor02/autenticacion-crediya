@@ -1,5 +1,6 @@
 package co.com.pragma.autenticacion.api;
 
+import co.com.pragma.autenticacion.model.auth.AuthConstants;
 import co.com.pragma.autenticacion.usecase.exceptions.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -13,6 +14,6 @@ public class ErrorResponses {
                     .bodyValue(error.getMessage());
         }
         return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .bodyValue("Error interno: " + error.getMessage());
+                .bodyValue(AuthConstants.MSG_INTERNAL_ERROR + error.getMessage());
     }
 }

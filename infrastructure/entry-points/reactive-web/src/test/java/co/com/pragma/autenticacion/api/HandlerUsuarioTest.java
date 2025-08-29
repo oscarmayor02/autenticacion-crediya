@@ -1,7 +1,7 @@
 package co.com.pragma.autenticacion.api;
 
-import co.com.pragma.autenticacion.api.dto.UsuarioRequestDTO;
-import co.com.pragma.autenticacion.api.mapper.UsuarioApiMapper;
+import co.com.pragma.autenticacion.api.dto.UserRequestDTO;
+import co.com.pragma.autenticacion.api.mapper.UserApiMapper;
 import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.usecase.user.UserUseCase;
 import jakarta.validation.Validator;
@@ -23,14 +23,14 @@ class HandlerUsuarioTest {
 
     private WebTestClient webTestClient;
     private UserUseCase userUseCase;
-    private UsuarioApiMapper usuarioMapper;
+    private UserApiMapper usuarioMapper;
     private Validator validator;
 
     @BeforeEach
     void setup() {
         // Mocks
         userUseCase = mock(UserUseCase.class);
-        usuarioMapper = mock(UsuarioApiMapper.class);
+        usuarioMapper = mock(UserApiMapper.class);
         validator = mock(Validator.class);
 
         // Handler real con mocks
@@ -38,7 +38,7 @@ class HandlerUsuarioTest {
 
         // Router mínimo para pruebas
         RouterFunction<ServerResponse> router = route()
-                .POST("/api/v1/usuarios", handler::registrarUsuario)
+                .POST("/api/v1/usuarios", handler::registerUser)
                 .build();
 
         // WebTestClient ligado al router
@@ -46,9 +46,9 @@ class HandlerUsuarioTest {
     }
 
     @Test
-    void registrarUsuario_success() {
+    void userRegister_success() {
         // DTO de prueba
-        UsuarioRequestDTO dto = new UsuarioRequestDTO();
+        UserRequestDTO dto = new UserRequestDTO();
         dto.setNombre("Juan");
         dto.setApellido("Perez");
         dto.setEmail("juan@example.com");
@@ -56,12 +56,12 @@ class HandlerUsuarioTest {
 
         // Domain User
         User user = new User();
-        user.setCorreoElectronico("juan@example.com");
+        user.setEmail("juan@example.com");
 
         // Comportamiento de mocks
         when(validator.validate(dto)).thenReturn(Collections.emptySet());
         when(userUseCase.existsByEmail(dto.getEmail())).thenReturn(Mono.just(false));
-        when(userUseCase.existsByDocumento(dto.getDocumentoIdentidad())).thenReturn(Mono.just(false));
+        when(userUseCase.existsByDocument(dto.getDocumentoIdentidad())).thenReturn(Mono.just(false));
         when(usuarioMapper.toDomain(dto)).thenReturn(user);
         when(userUseCase.saveUser(user)).thenReturn(Mono.just(user));
         when(usuarioMapper.toDTO(user)).thenReturn(dto);
@@ -79,8 +79,8 @@ class HandlerUsuarioTest {
     }
 
     @Test
-    void registrarUsuario_validationError() {
-        UsuarioRequestDTO dto = new UsuarioRequestDTO(); // vacío
+    void userRegister_validationError() {
+        UserRequestDTO dto = new UserRequestDTO(); // vacío
 
         // Mock validator para que devuelva error
         var violation = mock(jakarta.validation.ConstraintViolation.class);

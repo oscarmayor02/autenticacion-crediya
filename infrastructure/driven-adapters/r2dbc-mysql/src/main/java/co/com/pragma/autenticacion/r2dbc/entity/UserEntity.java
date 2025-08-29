@@ -11,7 +11,7 @@ import java.math.BigDecimal;
  * Entidad que representa la tabla "usuarios".
  * Contiene toda la información básica del usuario.
  */
-@Table(name = "usuarios")
+@Table(name = "users")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -19,31 +19,31 @@ import java.math.BigDecimal;
 @Builder
 public class UserEntity {
     @Id
-    @Column("id_usuario")
-    private Long idUsuario;
+    @Column("id_user")
+    private Long idUser;
 
-    private String nombre;
+    private String name;
+    @Column("last_name")
+    private String lastName;
 
-    private String apellido;
+    @Column("date_of_birth")
+    private String dateOfBirth;
 
-    @Column("fecha_nacimiento")
-    private String fechaNacimiento;
-
-    private String direccion;
+    private String address;
 
     private String password;
 
-    private String telefono;
+    private String telephone;
 
-    @Column("correo_electronico")
-    private String correoElectronico;
+    @Column("email")
+    private String email;
 
-    @Column("salario_base")
-    private BigDecimal salarioBase;
+    @Column("base_salary")
+    private BigDecimal baseSalary;
 
-    @Column("documento_identidad")
-    private String documentoIdentidad;
+    @Column("identity_document")
+    private String identityDocument;
 
-    @Column("rol_id")
-    private BigDecimal rolId;
+    @Column("role_id")
+    private BigDecimal roleId;
 }

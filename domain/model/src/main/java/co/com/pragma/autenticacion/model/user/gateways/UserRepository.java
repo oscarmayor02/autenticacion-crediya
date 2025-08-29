@@ -57,10 +57,10 @@ public interface UserRepository {
 
     /**
      * Validar si ya existe un usuario con el documento de identidad indicado.
-     * @param documentoIdentidad número de documento.
+     * @param identityDocument número de documento.
      * @return Mono<Boolean> true si ya existe.
      */
-    Mono<Boolean> existsByDocumento(String documentoIdentidad);
+    Mono<Boolean> existsByDocument(String identityDocument);
 
     /**
      * Verificar si existe un rol asociado al usuario mediante su id.
