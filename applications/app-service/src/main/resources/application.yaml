@@ -46,7 +46,12 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
-jwt:
-  secret: ChangeThisSecretKeyToASecureLongRandomValue!
-  access-token-validity-ms: 900000
-  refresh-token-validity-ms: 86400000
+security:
+  jwt:
+    secret: "${JWT_SECRET:ChangeThisSecretKeyToASecureLongRandomValue!@PrAgma2024}"
+    access-token-validity-ms: 9000000000
+    refresh-token-validity-ms: 8640000000
+logging:
+  level:
+    co.com.pragma.autenticacion: INFO
+    org.springframework.security: INFO

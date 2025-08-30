@@ -1,9 +1,8 @@
 package co.com.pragma.autenticacion.r2dbc;
 
-
 import co.com.pragma.autenticacion.model.user.User;
 import co.com.pragma.autenticacion.r2dbc.entity.UserEntity;
-import co.com.pragma.autenticacion.r2dbc.mapper.UsuarioR2dbcMapper;
+import co.com.pragma.autenticacion.r2dbc.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,104 +18,136 @@ import java.math.BigDecimal;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class) // Configura JUnit 5 para usar Mockito
+@ExtendWith(MockitoExtension.class)
 class UserReactiveRepositoryAdapterTest {
 
-    @Mock
-    private UsuarioReactiveRepository repo; // Mock del repositorio reactivo
+    private static final Long USER_ID = 1L;
+    private static final BigDecimal ROLE_ID = BigDecimal.ONE;
 
     @Mock
-    private UsuarioR2dbcMapper mapper; // Mock del mapper de entidad a dominio
+    private UserReactiveRepository repo;
 
     @Mock
-    private TransactionalOperator tx; // Mock del operador transaccional
+    private UserMapper mapper;
+
+    @Mock
+    private TransactionalOperator tx;
 
     @InjectMocks
-    private UserReactiveRepositoryAdapter adapter; // Adapter a testear
+    private UserReactiveRepositoryAdapter adapter;
 
-    private User user;
-    private UserEntity entity;
+    private User baseUser;
+    private UserEntity baseEntity;
 
     @BeforeEach
     void setUp() {
-        // Creamos un usuario y su entidad equivalente
-        user = new User(1L, "Ana", "Martinez", "1990-01-01", "Calle 1", "3000000", "ana@test.com",
-                BigDecimal.valueOf(2000), "123", BigDecimal.valueOf(1));
+        baseUser = buildUser(USER_ID, "Ana", "Martinez");
+        baseEntity = buildEntity(USER_ID, "Ana", "Martinez");
+    }
 
-        entity = new UserEntity(1L, "Ana", "Martinez", "1990-01-01", "Calle 1", "3000000",
-                "ana@test.com", BigDecimal.valueOf(2000), "123", 1L);
+    /** Factory Methods **/
+    private User buildUser(Long id, String name, String lastName) {
+        return User.builder()
+                .idNumber(id)
+                .name(name)
+                .lastName(lastName)
+                .dateOfBirth("1990-01-01")
+                .address("Calle 1")
+                .telephone("3000000")
+                .email("ana@test.com")
+                .baseSalary(BigDecimal.valueOf(2000))
+                .identityDocument("123")
+                .idRole(ROLE_ID)
+                .password("secret")
+                .build();
+    }
+
+    private UserEntity buildEntity(Long id, String name, String lastName) {
+        return UserEntity.builder()
+                .idUser(id)
+                .name(name)
+                .lastName(lastName)
+                .dateOfBirth("1990-01-01")
+                .address("Calle 1")
+                .telephone("3000000")
+                .email("ana@test.com")
+                .baseSalary(BigDecimal.valueOf(2000))
+                .identityDocument("123")
+                .roleId(ROLE_ID)
+                .password("secret")
+                .build();
+    }
+
+    /** Helper para simular transacciones **/
+    private void mockTransactional(Mono<?> mono) {
+        when(tx.transactional(any(Mono.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
-    void saveUser_shouldMapAndCallRepo() {
-        // Configuramos comportamiento de mocks
-        when(mapper.toEntity(user)).thenReturn(entity); // Mapper transforma User -> UserEntity
-        when(repo.save(entity)).thenReturn(Mono.just(entity)); // Repositorio guarda y retorna entidad
-        when(mapper.toModel(entity)).thenReturn(user); // Mapper transforma de vuelta a User
-        when(tx.transactional(any(Mono.class))).thenAnswer(i -> i.getArgument(0)); // Simula transacción
+    void saveUser_shouldReturnSavedUser() {
+        mockTransactional(Mono.just(baseUser));
+        when(mapper.toEntity(baseUser)).thenReturn(baseEntity);
+        when(repo.save(baseEntity)).thenReturn(Mono.just(baseEntity));
+        when(mapper.toModel(baseEntity)).thenReturn(baseUser);
 
-        // Ejecutamos el método a testear
-        StepVerifier.create(adapter.saveUser(user))
-                .expectNext(user) // Esperamos que devuelva el mismo usuario
+        StepVerifier.create(adapter.saveUser(baseUser))
+                .expectNext(baseUser)
                 .verifyComplete();
 
-        // Verificamos que el repositorio se llamó correctamente
-        verify(repo, times(1)).save(entity);
+        verify(repo).save(baseEntity);
     }
 
     @Test
-    void getUserByIdNumber_shouldReturnUser() {
-        when(repo.findById(1L)).thenReturn(Mono.just(entity)); // Repo retorna entidad
-        when(mapper.toModel(entity)).thenReturn(user); // Mapper transforma a User
+    void getUserById_shouldReturnUser() {
+        when(repo.findById(USER_ID)).thenReturn(Mono.just(baseEntity));
+        when(mapper.toModel(baseEntity)).thenReturn(baseUser);
 
-        StepVerifier.create(adapter.getUserByIdNumber(1L))
-                .expectNext(user)
+        StepVerifier.create(adapter.getUserByIdNumber(USER_ID))
+                .expectNext(baseUser)
                 .verifyComplete();
 
-        verify(repo, times(1)).findById(1L);
+        verify(repo).findById(USER_ID);
     }
 
     @Test
-    void getUserByIdNumber_shouldThrowNotFoundException() {
-        when(repo.findById(2L)).thenReturn(Mono.empty()); // Repo no encuentra entidad
+    void getUserById_shouldThrowNotFoundException() {
+        when(repo.findById(2L)).thenReturn(Mono.empty());
 
         StepVerifier.create(adapter.getUserByIdNumber(2L))
-                .expectErrorMatches(throwable -> throwable instanceof co.com.pragma.autenticacion.usecase.exceptions.NotFoundException &&
-                        throwable.getMessage().contains("Usuario no encontrado"))
+                .expectErrorMatches(ex -> ex instanceof co.com.pragma.autenticacion.usecase.exceptions.NotFoundException
+                        && ex.getMessage().contains("Usuario no encontrado"))
                 .verify();
 
-        verify(repo, times(1)).findById(2L);
+        verify(repo).findById(2L);
     }
 
     @Test
-    void editUser_shouldUpdateExistingUser() {
-        User updatedUser = new User(1L, "Ana", "Lopez", "1990-01-01", "Calle 1", "3000000",
-                "ana@test.com", BigDecimal.valueOf(2000), "123", BigDecimal.valueOf(1));
-        UserEntity updatedEntity = new UserEntity(1L, "Ana", "Lopez", "1990-01-01", "Calle 1", "3000000",
-                "ana@test.com", BigDecimal.valueOf(2000), "123", 1L);
+    void editUser_shouldUpdateUser() {
+        User updatedUser = baseUser.toBuilder().lastName("Lopez").build();
+        UserEntity updatedEntity = buildEntity(USER_ID, "Ana", "Lopez");
 
-        when(repo.findById(1L)).thenReturn(Mono.just(entity)); // Repo encuentra usuario
-        when(mapper.toEntity(updatedUser)).thenReturn(updatedEntity); // Mapper transforma
-        when(repo.save(updatedEntity)).thenReturn(Mono.just(updatedEntity)); // Repo guarda cambios
+        when(repo.findById(USER_ID)).thenReturn(Mono.just(baseEntity));
+        when(mapper.toEntity(updatedUser)).thenReturn(updatedEntity);
+        when(repo.save(updatedEntity)).thenReturn(Mono.just(updatedEntity));
         when(mapper.toModel(updatedEntity)).thenReturn(updatedUser);
-        when(tx.transactional(any(Mono.class))).thenAnswer(i -> i.getArgument(0)); // Transacción simulada
+        mockTransactional(Mono.just(updatedUser));
 
         StepVerifier.create(adapter.editUser(updatedUser))
                 .expectNext(updatedUser)
                 .verifyComplete();
 
-        verify(repo, times(1)).findById(1L);
-        verify(repo, times(1)).save(updatedEntity);
+        verify(repo).findById(USER_ID);
+        verify(repo).save(updatedEntity);
     }
 
     @Test
-    void deleteUser_shouldCallRepo() {
-        when(repo.deleteById(1L)).thenReturn(Mono.empty()); // Repo elimina usuario
-        when(tx.transactional(any(Mono.class))).thenAnswer(i -> i.getArgument(0)); // Simula transacción
+    void deleteUser_shouldCompleteWithoutError() {
+        when(repo.deleteById(USER_ID)).thenReturn(Mono.empty());
+        mockTransactional(Mono.empty());
 
-        StepVerifier.create(adapter.deleteUser(1L))
+        StepVerifier.create(adapter.deleteUser(USER_ID))
                 .verifyComplete();
 
-        verify(repo, times(1)).deleteById(1L);
+        verify(repo).deleteById(USER_ID);
     }
 }

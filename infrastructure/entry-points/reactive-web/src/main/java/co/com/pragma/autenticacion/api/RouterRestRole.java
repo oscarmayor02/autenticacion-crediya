@@ -1,6 +1,7 @@
 package co.com.pragma.autenticacion.api;
 
-import co.com.pragma.autenticacion.api.dto.RolDTO;
+import co.com.pragma.autenticacion.api.dto.RoleDTO;
+import co.com.pragma.autenticacion.model.auth.AuthConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,16 +24,11 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
  */
 @Configuration
 public class RouterRestRole {
-
-    // Constantes
-    private static final String BASE_PATH = "/api/v1/roles";
-    private static final String PATH_ID = "/{uniqueId}";
-
     @Bean
     @RouterOperations({
             // GET ALL
             @RouterOperation(
-                    path = BASE_PATH,
+                    path = AuthConstants.ROLE_BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerRole.class,
@@ -41,12 +37,12 @@ public class RouterRestRole {
                             operationId = "getAllRoles",
                             summary = "Obtener todos los roles",
                             responses = {@ApiResponse(responseCode = "200", description = "Lista de roles",
-                                    content = @Content(schema = @Schema(implementation = RolDTO.class)))}
+                                    content = @Content(schema = @Schema(implementation = RoleDTO.class)))}
                     )
             ),
             // GET BY ID
             @RouterOperation(
-                    path = BASE_PATH + PATH_ID,
+                    path = AuthConstants.ROLE_BASE_PATH + AuthConstants.ROLE_BY_ID_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.GET,
                     beanClass = HandlerRole.class,
@@ -55,15 +51,15 @@ public class RouterRestRole {
                             operationId = "obtenerRolPorId",
                             summary = "Obtener un rol por ID",
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Rol encontrado",
-                                            content = @Content(schema = @Schema(implementation = RolDTO.class))),
-                                    @ApiResponse(responseCode = "404", description = "Rol no encontrado")
+                                    @ApiResponse(responseCode = "200", description = "Role encontrado",
+                                            content = @Content(schema = @Schema(implementation = RoleDTO.class))),
+                                    @ApiResponse(responseCode = "404", description = "Role no encontrado")
                             }
                     )
             ),
             // POST
             @RouterOperation(
-                    path = BASE_PATH,
+                    path = AuthConstants.ROLE_BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.POST,
                     beanClass = HandlerRole.class,
@@ -72,13 +68,13 @@ public class RouterRestRole {
                             operationId = "crearRol",
                             summary = "Registrar un nuevo rol",
                             requestBody = @RequestBody(required = true,
-                                    content = @Content(schema = @Schema(implementation = RolDTO.class))),
-                            responses = {@ApiResponse(responseCode = "201", description = "Rol creado")}
+                                    content = @Content(schema = @Schema(implementation = RoleDTO.class))),
+                            responses = {@ApiResponse(responseCode = "201", description = "Role creado")}
                     )
             ),
             // PUT
             @RouterOperation(
-                    path = BASE_PATH,
+                    path = AuthConstants.ROLE_BASE_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.PUT,
                     beanClass = HandlerRole.class,
@@ -87,14 +83,14 @@ public class RouterRestRole {
                             operationId = "actualizarRol",
                             summary = "Editar un rol existente",
                             responses = {
-                                    @ApiResponse(responseCode = "200", description = "Rol actualizado"),
-                                    @ApiResponse(responseCode = "404", description = "Rol no encontrado")
+                                    @ApiResponse(responseCode = "200", description = "Role actualizado"),
+                                    @ApiResponse(responseCode = "404", description = "Role no encontrado")
                             }
                     )
             ),
             // DELETE
             @RouterOperation(
-                    path = BASE_PATH + PATH_ID,
+                    path = AuthConstants.ROLE_BASE_PATH + AuthConstants.ROLE_BY_ID_PATH,
                     produces = {MediaType.APPLICATION_JSON_VALUE},
                     method = RequestMethod.DELETE,
                     beanClass = HandlerRole.class,
@@ -103,16 +99,16 @@ public class RouterRestRole {
                             operationId = "eliminarRol",
                             summary = "Eliminar un rol por ID",
                             responses = {
-                                    @ApiResponse(responseCode = "204", description = "Rol eliminado"),
-                                    @ApiResponse(responseCode = "404", description = "Rol no encontrado")
+                                    @ApiResponse(responseCode = "204", description = "Role eliminado"),
+                                    @ApiResponse(responseCode = "404", description = "Role no encontrado")
                             }
                     )
             )
     })
     public RouterFunction<ServerResponse> rolRoutes(HandlerRole rolHandler) {
-        return route(POST(BASE_PATH), rolHandler::crearRol)
-                .andRoute(GET(BASE_PATH + PATH_ID), rolHandler::obtenerRolPorId)
-                .andRoute(PUT(BASE_PATH), rolHandler::actualizarRol)
-                .andRoute(DELETE(BASE_PATH + PATH_ID), rolHandler::eliminarRol);
+        return route(POST(AuthConstants.ROLE_BASE_PATH), rolHandler::crearRol)
+                .andRoute(GET(AuthConstants.ROLE_BASE_PATH + AuthConstants.ROLE_BY_ID_PATH), rolHandler::getRoleById)
+                .andRoute(PUT(AuthConstants.ROLE_BASE_PATH), rolHandler::updateRole)
+                .andRoute(DELETE(AuthConstants.ROLE_BASE_PATH + AuthConstants.ROLE_BY_ID_PATH), rolHandler::deleteRole);
     }
 }

@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -35,19 +34,21 @@ class UserUseCaseTest {
         //  Instanciamos un usuario válido
         user = new User();
         user.setIdNumber(1L);
-        user.setNombre("Oscar");
-        user.setApellido("Mayor");
-        user.setCorreoElectronico("oscar@test.com");
-        user.setDocumentoIdentidad("12345678");
-        user.setSalarioBase(new BigDecimal("2000000"));
-        user.setFechaNacimiento("1990-05-10");
+        user.setName("Oscar");
+        user.setLastName("Mayor");
+        user.setEmail("oscar@test.com");
+        user.setIdentityDocument("12345678");
+        user.setBaseSalary(new BigDecimal("1000000"));
+        user.setDateOfBirth("1990-05-10");
     }
-
+//agregar datamock
     @Test
     void saveUser_ok() {
         //  Simulamos que NO existen duplicados
-        when(userRepository.existsByEmail(user.getCorreoElectronico())).thenReturn(Mono.just(false));
-        when(userRepository.existsByDocumento(user.getDocumentoIdentidad())).thenReturn(Mono.just(false));
+        when(userRepository.existsByEmail(user.getEmail()))
+                .thenReturn(Mono.just(false));
+        when(userRepository.existsByDocument(user.getIdentityDocument()))
+                .thenReturn(Mono.just(false));
 
         //  Simulamos que el repo guarda el usuario
         when(userRepository.saveUser(user)).thenReturn(Mono.just(user));
@@ -63,8 +64,8 @@ class UserUseCaseTest {
     @Test
     void saveUser_emailDuplicado() {
         //  Simulamos que el correo ya existe
-        when(userRepository.existsByEmail(user.getCorreoElectronico())).thenReturn(Mono.just(true));
-        when(userRepository.existsByDocumento(user.getDocumentoIdentidad())).thenReturn(Mono.just(false));
+        when(userRepository.existsByEmail(user.getEmail())).thenReturn(Mono.just(true));
+        when(userRepository.existsByDocument(user.getIdentityDocument())).thenReturn(Mono.just(false));
 
         StepVerifier.create(userUseCase.saveUser(user))
                 .expectError(DuplicateException.class) //  Debe lanzar excepción
