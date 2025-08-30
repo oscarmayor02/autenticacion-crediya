@@ -28,7 +28,10 @@ public class SecurityConfig {
                 .authorizeExchange(ex -> ex
                         // Endpoints públicos.
                         .pathMatchers(AuthConstants.LOGIN_PATH, AuthConstants.REFRESH_PATH,
-                                "/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**").permitAll()
                         // Registro de usuarios permitido a cualquiera.
                         .pathMatchers(HttpMethod.POST, "/api/v1/usuarios").permitAll()
                         // Endpoints restringidos a roles específicos.

@@ -1,0 +1,53 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: autenticacion
+
+  # JDBC para Flyway (migraciones). Usa el host del servicio de Compose.
+  datasource:
+    url: jdbc:mysql://mysql-autenticacion:3306/crediya_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+
+  # (Opcional) R2DBC si tu adapter lee estas props estándar
+  r2dbc:
+    url: r2dbc:mariadb://mysql-autenticacion:3306/crediya_auth
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+
+  jpa:
+    hibernate:
+      ddl-auto: none         # con Flyway, mejor none (o update si prefieres)
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    url: jdbc:mysql://mysql-autenticacion:3306/crediya_auth
+    user: ${DB_USER:root}
+    password: ${DB_PASS:root}
+    locations: classpath:db/migration
+    baseline-on-migrate: true       # 👈 clave para no bloquear migraciones ya creadas
+    connect-retries: 3
+
+# Adapter Bancolombia (para evitar 'localhost' dentro del contenedor)
+adapters:
+  r2dbc:
+    host: mysql-autenticacion
+    port: 3306
+    database: crediya_auth
+    username: ${DB_USER:root}
+    password: ${DB_PASS:root}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:ChangeThisSecretKeyToASecureLongRandomValue!@PrAgma2024}
+    access-token-validity-ms: 9000000000
+    refresh-token-validity-ms: 8640000000
