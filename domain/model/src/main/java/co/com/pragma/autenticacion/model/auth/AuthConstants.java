@@ -24,7 +24,7 @@ public final class AuthConstants {
     public static final String CLIENT_ROLE  = "CLIENTE";
 
     // ------------------ Tiempos (ms) ------------------
-    public static final long ACCESS_TOKEN_TTL_MS  = 60_000L;       // 1 minuto
+    public static final long ACCESS_TOKEN_TTL_MS  = 15 * 60_0000L;       // 1 minuto
     public static final long REFRESH_TOKEN_TTL_MS = 15 * 60_000L;  // 15 minutos
 
     // ------------------ Endpoints Auth ------------------

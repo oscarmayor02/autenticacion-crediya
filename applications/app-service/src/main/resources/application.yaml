@@ -49,8 +49,8 @@ springdoc:
 security:
   jwt:
     secret: "${JWT_SECRET:ChangeThisSecretKeyToASecureLongRandomValue!@PrAgma2024}"
-    access-token-validity-ms: 9000000
-    refresh-token-validity-ms: 864000000
+    access-token-validity-ms: 9000000000
+    refresh-token-validity-ms: 8640000000
 logging:
   level:
     co.com.pragma.autenticacion: INFO
